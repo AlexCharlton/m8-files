@@ -1,7 +1,13 @@
 [package]
 name = "m8-files"
+description = "Parse the Dirtywave M8's file formats"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/AlexCharlton/m8-files"
+documentation = "https://docs.rs/m8-files"
+homepage = "https://github.com/AlexCharlton/m8-files"
+license = "MIT"
+keywords = ["music"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

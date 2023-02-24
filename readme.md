@@ -1,6 +1,6 @@
 # m8-files
 
-Reads Dirtwave M8 files into Rust structs.
+Reads [Dirtwave M8](https://dirtywave.com/) files into Rust structs.
 
 Big thanks to [m8-js](https://github.com/whitlockjc/m8-js) who did all the real dirty work.
 

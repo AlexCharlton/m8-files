@@ -1,3 +1,21 @@
+//! This library lets you parse Dirtywave M8 data
+//!
+//! See, in particular, the `read` method available on:
+//! - [`Song::read`]
+//! - [`Instrument::read`]
+//! - [`Scale::read`]
+//! - [`Theme::read`]
+//!
+//! E.g.:
+//! ```
+//! use m8_files::*;
+//!
+//! let mut f = std::fs::File::open(&args[1]).unwrap();
+//! let song = Song::read(&mut f)?;
+//! dbg!(song);
+//! ```
+//!
+
 use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
