@@ -75,17 +75,17 @@ pub struct Song {
     pub key: u8,
 
     pub song: SongSteps,
-    pub phrases: [Phrase;255],
-    pub chains: [Chain;255],
-    pub instruments: [Instrument;128],
-    pub tables: [Table;256],
-    pub grooves: [Groove;32],
-    pub scales: [Scale;16],
+    pub phrases: Vec<Phrase>,
+    pub chains: Vec<Chain>,
+    pub instruments: Vec<Instrument>,
+    pub tables: Vec<Table>,
+    pub grooves: Vec<Groove>,
+    pub scales: Vec<Scale>,
 
     pub mixer_settings: MixerSettings,
     pub effects_settings: EffectsSettings,
     pub midi_settings: MidiSettings,
-    pub midi_mappings: [MidiMapping;128],
+    pub midi_mappings: Vec<MidiMapping>,
 }
 
 impl fmt::Debug for Song {
@@ -115,6 +115,13 @@ impl fmt::Debug for Song {
 impl Song {
     const SIZE_PRIOR_TO_2_5: usize = 0x1A970;
     const SIZE: usize = 0x1AD09;
+    const N_PHRASES: usize = 255;
+    const N_CHAINS: usize = 255;
+    const N_INSTRUMENTS: usize = 128;
+    const N_TABLES: usize = 256;
+    const N_GROOVES: usize = 32;
+    const N_SCALES: usize = 16;
+    const N_MIDI_MAPPINGS: usize = 128;
 
     pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
         let mut buf: Vec<u8> = vec!();
@@ -130,6 +137,7 @@ impl Song {
             return Err(ParseError("File is not long enough to be a M8 song".to_string()));
         }
 
+        dbg!(&version);
         Self::from_reader(&reader, version)
     }
 
@@ -145,29 +153,34 @@ impl Song {
         let mixer_settings = MixerSettings::from_reader(reader)?;
         // println!("{:x}", reader.pos());
 
-        let mut i:u16 = 0;
-        let grooves: [Groove; 32] = arr![Groove::from_reader(reader, {i += 1; (i - 1) as u8})?; 32];
+        let grooves = (0..Self::N_GROOVES).map(|i| Groove::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Groove>>>()?;
         let song = SongSteps::from_reader(reader)?;
-        i = 0;
-        let phrases: [Phrase; 255] = arr![Phrase::from_reader(reader, {i += 1; (i - 1) as u8})?; 255];
-        i = 0;
-        let chains: [Chain; 255] = arr![Chain::from_reader(reader, {i += 1; (i - 1) as u8})?; 255];
-        i = 0;
-        let tables: [Table; 256] = arr![Table::from_reader(reader, {i += 1; (i - 1) as u8})?; 256];
-        i = 0;
-        let instruments: [Instrument; 128] = arr![Instrument::from_reader(reader, {i += 1; (i - 1) as u8}, version)?; 128];
+        let phrases = (0..Self::N_PHRASES).map(|i| Phrase::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Phrase>>>()?;
+        let chains = (0..Self::N_CHAINS).map(|i| Chain::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Chain>>>()?;
+        let tables = (0..Self::N_TABLES).map(|i| Table::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Table>>>()?;
+        let instruments = (0..Self::N_INSTRUMENTS)
+            .map(|i| Instrument::from_reader(reader, i as u8, version))
+            .collect::<Result<Vec<Instrument>>>()?;
 
         reader.read_bytes(3); // Skip
         let effects_settings = EffectsSettings::from_reader(reader)?;
         reader.set_pos(0x1A5FE);
-        let midi_mappings: [MidiMapping; 128] = arr![MidiMapping::from_reader(reader)?; 128];
+        let midi_mappings = (0..Self::N_MIDI_MAPPINGS)
+            .map(|_| MidiMapping::from_reader(reader))
+            .collect::<Result<Vec<MidiMapping>>>()?;
 
-        i = 0;
-        let scales: [Scale; 16] = if version.at_least(2, 5) {
+        let scales: Vec<Scale> = if version.at_least(2, 5) {
             reader.set_pos(0x1AA7E);
-            arr![Scale::from_reader(reader, {i += 1; (i - 1) as u8})?; 16]
+            (0..Self::N_SCALES).map(|i| Scale::from_reader(reader, i as u8))
+                .collect::<Result<Vec<Scale>>>()?
         } else {
-            arr![{let mut s = Scale::default(); s.number = i as u8; i+=1; s}; 16]
+            (0..Self::N_SCALES)
+                .map(|i| -> Scale {let mut s = Scale::default(); s.number = i as u8; s})
+                .collect()
         };
 
         Ok(Self{
