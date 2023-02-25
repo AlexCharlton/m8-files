@@ -425,7 +425,7 @@ impl Step {
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
-pub struct Note(u8);
+pub struct Note(pub u8);
 
 impl fmt::Display for Note {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
