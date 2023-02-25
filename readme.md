@@ -11,7 +11,7 @@ Big thanks to [m8-js](https://github.com/whitlockjc/m8-js) who did all the real 
 
 Add to your `Cargo.toml`:
 ```
-m8-files = "0.1.1"
+m8-files = "0.1.2"
 ```
 
 Load an example song:

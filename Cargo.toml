@@ -1,7 +1,7 @@
 [package]
 name = "m8-files"
 description = "Parse the Dirtywave M8's file formats"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 repository = "https://github.com/AlexCharlton/m8-files"
 documentation = "https://docs.rs/m8-files"
