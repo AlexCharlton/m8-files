@@ -155,7 +155,6 @@ impl Song {
             return Err(ParseError("File is not long enough to be a M8 song".to_string()));
         }
 
-        dbg!(&version);
         Self::from_reader(&reader, version)
     }
 
