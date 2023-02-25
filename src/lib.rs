@@ -82,7 +82,7 @@ impl Reader {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Song {
     pub version: Version,
     pub directory: String,
@@ -266,7 +266,7 @@ impl Version {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct SongSteps {
     pub steps: [u8; 2048]
 }
@@ -309,7 +309,7 @@ impl fmt::Debug for SongSteps {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Chain {
     pub number: u8,
     pub steps: [ChainStep; 16]
@@ -340,7 +340,7 @@ impl fmt::Debug for Chain {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct ChainStep {
     pub phrase: u8,
     pub transpose: u8,
@@ -362,7 +362,7 @@ impl ChainStep {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Phrase {
     pub number: u8,
     pub steps: [Step; 16]
@@ -393,7 +393,7 @@ impl fmt::Debug for Phrase {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Step {
     pub note: Note,
     pub velocity: u8,
@@ -424,7 +424,7 @@ impl Step {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Note(u8);
 
 impl fmt::Display for Note {
@@ -453,7 +453,7 @@ impl fmt::Display for Note {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Table {
     pub number: u8,
     pub steps: [TableStep; 16]
@@ -485,7 +485,7 @@ impl fmt::Debug for Table {
 }
 
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct TableStep {
     pub transpose: u8,
     pub velocity: u8,
@@ -515,7 +515,7 @@ impl TableStep {
 }
 
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct FX {
     pub command: FXCommand,
     pub value: u8
@@ -540,7 +540,7 @@ impl fmt::Display for FX {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum FXCommand {
     // Sequencer commands
@@ -654,7 +654,7 @@ impl FXCommand  {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Instrument {
     WavSynth(WavSynth),
     MacroSynth(MacroSynth),
@@ -832,7 +832,7 @@ impl Instrument {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct WavSynth {
     pub number: u8,
     pub name: String,
@@ -847,7 +847,7 @@ pub struct WavSynth {
     pub mirror: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MacroSynth {
     pub number: u8,
     pub name: String,
@@ -862,7 +862,7 @@ pub struct MacroSynth {
     pub redux: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Sampler {
     pub number: u8,
     pub name: String,
@@ -879,7 +879,7 @@ pub struct Sampler {
     pub degrade: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FMSynth {
     pub number: u8,
     pub name: String,
@@ -895,7 +895,7 @@ pub struct FMSynth {
     pub mod4: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MIDIOut {
     pub number: u8,
     pub name: String,
@@ -910,7 +910,7 @@ pub struct MIDIOut {
 }
 
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct SynthParams {
     pub volume: u8,
     pub pitch: u8,
@@ -958,7 +958,7 @@ impl SynthParams {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Envelope {
     pub dest: u8,
     pub amount: u8,
@@ -981,7 +981,7 @@ impl Envelope {
 }
 
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct LFO {
     pub shape: u8,
     pub dest: u8,
@@ -1003,7 +1003,7 @@ impl LFO {
     }
 }
 
-#[derive(PartialEq, Debug, Default)]
+#[derive(PartialEq, Debug, Default, Clone)]
 pub struct Operator {
     pub shape: u8,
     pub ratio: u8,
@@ -1015,7 +1015,7 @@ pub struct Operator {
     pub mod_b: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct ControlChange {
     pub number: u8,
     pub default_value: u8,
@@ -1030,7 +1030,7 @@ impl ControlChange {
 }
 
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Groove {
     pub number: u8,
     pub steps: [u8; 16]
@@ -1060,7 +1060,7 @@ impl fmt::Debug for Groove {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Scale {
     pub number: u8,
     pub name: String,
@@ -1134,7 +1134,7 @@ impl fmt::Debug for Scale {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct NoteOffset {
     pub enabled: bool,
     pub semitones: f32, // Semitones.cents: -24.0-24.0
@@ -1145,7 +1145,7 @@ impl NoteOffset {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MidiSettings {
     pub receive_sync: bool,
     pub receive_transport: u8,
@@ -1181,7 +1181,7 @@ impl MidiSettings {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MixerSettings {
     pub master_volume: u8,
     pub master_limit: u8,
@@ -1255,7 +1255,7 @@ impl MixerSettings {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct InputMixerSettings {
     pub volume: u8,
     pub chorus: u8,
@@ -1263,13 +1263,13 @@ pub struct InputMixerSettings {
     pub reverb: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum AnalogInputSettings {
     Stereo(InputMixerSettings),
     DualMono((InputMixerSettings, InputMixerSettings)),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct EffectsSettings {
     pub chorus_mod_depth: u8,
     pub chorus_mod_freq: u8,
@@ -1339,7 +1339,7 @@ impl EffectsSettings {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MidiMapping {
     pub channel: u8,
     pub control_number: u8,
@@ -1367,7 +1367,7 @@ impl MidiMapping {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Theme {
     pub background: RGB,
     pub text_empty: RGB,
@@ -1419,7 +1419,7 @@ impl Theme {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub struct RGB {
     pub r: u8,
     pub g: u8,
