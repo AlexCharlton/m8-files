@@ -21,7 +21,7 @@ $ cargo add play-files
 
 Load an example song:
 ```
-$ cargo run --example read_song -- examples/songs/DEMO1.m8s
+$ cargo run --example read_song -- examples/songs/DEFAULT.m8s
 ```
 
 ## TODO
