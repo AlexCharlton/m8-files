@@ -165,10 +165,14 @@ impl Song {
             ));
         }
 
-        Self::from_reader(&reader, version)
+        if version.at_least(3, 0) {
+            Self::from_reader3(&reader, version)
+        } else {
+            Self::from_reader2(&reader, version)
+        }
     }
 
-    fn from_reader(reader: &Reader, version: Version) -> Result<Self> {
+    fn from_reader2(reader: &Reader, version: Version) -> Result<Self> {
         let directory = reader.read_string(128);
         let transpose = reader.read();
         let tempo = LittleEndian::read_f32(reader.read_bytes(4));
@@ -185,17 +189,91 @@ impl Song {
             .collect::<Result<Vec<Groove>>>()?;
         let song = SongSteps::from_reader(reader)?;
         let phrases = (0..Self::N_PHRASES)
-            .map(|i| Phrase::from_reader(reader, i as u8))
+            .map(|i| Phrase::from_reader(reader, i as u8, version))
             .collect::<Result<Vec<Phrase>>>()?;
         let chains = (0..Self::N_CHAINS)
             .map(|i| Chain::from_reader(reader, i as u8))
             .collect::<Result<Vec<Chain>>>()?;
         let tables = (0..Self::N_TABLES)
-            .map(|i| Table::from_reader(reader, i as u8))
+            .map(|i| Table::from_reader(reader, i as u8, version))
             .collect::<Result<Vec<Table>>>()?;
         let instruments = (0..Self::N_INSTRUMENTS)
-            .map(|i| Instrument::from_reader(reader, i as u8, version))
+            .map(|i| Instrument::from_reader2(reader, i as u8, version))
             .collect::<Result<Vec<Instrument>>>()?;
+
+        reader.read_bytes(3); // Skip
+        let effects_settings = EffectsSettings::from_reader(reader)?;
+        reader.set_pos(0x1A5FE);
+        let midi_mappings = (0..Self::N_MIDI_MAPPINGS)
+            .map(|_| MidiMapping::from_reader(reader))
+            .collect::<Result<Vec<MidiMapping>>>()?;
+
+        let scales: Vec<Scale> = if version.at_least(2, 5) {
+            reader.set_pos(0x1AA7E);
+            (0..Self::N_SCALES)
+                .map(|i| Scale::from_reader(reader, i as u8))
+                .collect::<Result<Vec<Scale>>>()?
+        } else {
+            (0..Self::N_SCALES)
+                .map(|i| -> Scale {
+                    let mut s = Scale::default();
+                    s.number = i as u8;
+                    s
+                })
+                .collect()
+        };
+
+        Ok(Self {
+            version,
+            directory,
+            transpose,
+            tempo,
+            quantize,
+            name,
+            midi_settings,
+            key,
+            mixer_settings,
+            grooves,
+            song,
+            phrases,
+            chains,
+            tables,
+            instruments,
+            scales,
+            effects_settings,
+            midi_mappings,
+        })
+    }
+
+    fn from_reader3(reader: &Reader, version: Version) -> Result<Self> {
+        let directory = reader.read_string(128);
+        let transpose = reader.read();
+        let tempo = LittleEndian::read_f32(reader.read_bytes(4));
+        let quantize = reader.read();
+        let name = reader.read_string(12);
+        let midi_settings = MidiSettings::from_reader(reader)?;
+        let key = reader.read();
+        reader.read_bytes(18); // Skip
+        let mixer_settings = MixerSettings::from_reader(reader)?;
+        // println!("{:x}", reader.pos());
+
+        let grooves = (0..Self::N_GROOVES)
+            .map(|i| Groove::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Groove>>>()?;
+        let song = SongSteps::from_reader(reader)?;
+        let phrases = (0..Self::N_PHRASES)
+            .map(|i| Phrase::from_reader(reader, i as u8, version))
+            .collect::<Result<Vec<Phrase>>>()?;
+        let chains = (0..Self::N_CHAINS)
+            .map(|i| Chain::from_reader(reader, i as u8))
+            .collect::<Result<Vec<Chain>>>()?;
+        let tables = (0..Self::N_TABLES)
+            .map(|i| Table::from_reader(reader, i as u8, version))
+            .collect::<Result<Vec<Table>>>()?;
+        // let instruments = (0..Self::N_INSTRUMENTS)
+        //     .map(|i| Instrument::from_reader3(reader, i as u8, version))
+        //     .collect::<Result<Vec<Instrument>>>()?;
+        let instruments: Vec<Instrument> = vec![];
 
         reader.read_bytes(3); // Skip
         let effects_settings = EffectsSettings::from_reader(reader)?;
@@ -247,6 +325,16 @@ pub struct Version {
     pub major: u8,
     pub minor: u8,
     pub patch: u8,
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        Self {
+            major: 3,
+            minor: 0,
+            patch: 0,
+        }
+    }
 }
 
 impl fmt::Display for Version {
@@ -396,18 +484,20 @@ impl ChainStep {
 pub struct Phrase {
     pub number: u8,
     pub steps: [Step; 16],
+    version: Version,
 }
 impl Phrase {
     pub fn print_screen(&self) -> String {
         (0..16).fold("  N   V  I  FX1   FX2   FX3  \n".to_string(), |s, row| {
-            s + &self.steps[row].print(row as u8) + "\n"
+            s + &self.steps[row].print(row as u8, self.version) + "\n"
         })
     }
 
-    fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
+    fn from_reader(reader: &Reader, number: u8, version: Version) -> Result<Self> {
         Ok(Self {
             number,
             steps: arr![Step::from_reader(reader)?; 16],
+            version,
         })
     }
 }
@@ -433,7 +523,7 @@ pub struct Step {
     pub fx3: FX,
 }
 impl Step {
-    pub fn print(&self, row: u8) -> String {
+    pub fn print(&self, row: u8, version: Version) -> String {
         let velocity = if self.velocity == 255 {
             format!("--")
         } else {
@@ -446,7 +536,13 @@ impl Step {
         };
         format!(
             "{:x} {} {} {} {} {} {}",
-            row, self.note, velocity, instrument, self.fx1, self.fx2, self.fx3
+            row,
+            self.note,
+            velocity,
+            instrument,
+            self.fx1.print(version),
+            self.fx2.print(version),
+            self.fx3.print(version)
         )
     }
 
@@ -474,6 +570,8 @@ impl fmt::Display for Note {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0 == 255 {
             write!(f, "---")
+        } else if self.0 >= 0x80 {
+            write!(f, "OFF") // This isn't really true for < V3
         } else {
             let oct = (self.0 / 12) + 1;
             let n = match self.0 % 12 {
@@ -500,18 +598,20 @@ impl fmt::Display for Note {
 pub struct Table {
     pub number: u8,
     pub steps: [TableStep; 16],
+    version: Version,
 }
 impl Table {
     pub fn print_screen(&self) -> String {
         (0..16).fold("  N  V  FX1   FX2   FX3  \n".to_string(), |s, row| {
-            s + &self.steps[row].print(row as u8) + "\n"
+            s + &self.steps[row].print(row as u8, self.version) + "\n"
         })
     }
 
-    fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
+    fn from_reader(reader: &Reader, number: u8, version: Version) -> Result<Self> {
         Ok(Self {
             number,
             steps: arr![TableStep::from_reader(reader)?; 16],
+            version,
         })
     }
 }
@@ -536,7 +636,7 @@ pub struct TableStep {
     pub fx3: FX,
 }
 impl TableStep {
-    pub fn print(&self, row: u8) -> String {
+    pub fn print(&self, row: u8, version: Version) -> String {
         let transpose = if self.transpose == 255 {
             format!("--")
         } else {
@@ -549,7 +649,12 @@ impl TableStep {
         };
         format!(
             "{:x} {} {} {} {} {}",
-            row, transpose, velocity, self.fx1, self.fx2, self.fx3
+            row,
+            transpose,
+            velocity,
+            self.fx1.print(version),
+            self.fx2.print(version),
+            self.fx3.print(version)
         )
     }
 
@@ -566,145 +671,235 @@ impl TableStep {
 
 #[derive(PartialEq, Debug, Clone, Copy, Default)]
 pub struct FX {
-    pub command: FXCommand,
+    pub command: u8,
     pub value: u8,
 }
 impl FX {
     fn from_reader(reader: &Reader) -> Result<Self> {
         Ok(Self {
-            command: FXCommand::from_u8(reader.read()),
+            command: reader.read(),
             value: reader.read(),
         })
     }
-}
 
-impl fmt::Display for FX {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.command == FXCommand::NONE {
-            write!(f, "---00")
+    fn print(&self, version: Version) -> String {
+        if self.command == 255 {
+            format!("---00")
         } else {
-            write!(f, "{:?}{:02x}", self.command, self.value)
+            let c = if version.at_least(3, 0) {
+                self.format_command3()
+            } else {
+                self.format_command2()
+            };
+            format!("{}{:02x}", c, self.value)
         }
     }
-}
 
-#[repr(u8)]
-#[derive(PartialEq, Debug, Clone, Copy)]
-#[allow(dead_code)]
-pub enum FXCommand {
-    // Sequencer commands
-    ARP = 0x00,
-    CHA = 0x01,
-    DEL = 0x02,
-    GRV = 0x03,
-    HOP = 0x04,
-    KIL = 0x05,
-    RAN = 0x06,
-    RET = 0x07,
-    REP = 0x08,
-    NTH = 0x09,
-    PSL = 0x0A,
-    PSN = 0x0B,
-    PVB = 0x0C,
-    PVX = 0x0D,
-    SCA = 0x0E,
-    SCG = 0x0F,
-    SED = 0x10,
-    SNG = 0x11,
-    TBL = 0x12,
-    THO = 0x13,
-    TIC = 0x14,
-    TPO = 0x15,
-    TSP = 0x16,
-    // FX + mixer commands
-    VMV = 0x17,
-    XCM = 0x18,
-    XCF = 0x19,
-    XCW = 0x1A,
-    XCR = 0x1B,
-    XDT = 0x1C,
-    XDF = 0x1D,
-    XDW = 0x1E,
-    XDR = 0x1F,
-    XRS = 0x20,
-    XRD = 0x21,
-    XRM = 0x22,
-    XRF = 0x23,
-    XRW = 0x24,
-    XRZ = 0x25,
-    VCH = 0x26,
-    VCD = 0x27,
-    VRE = 0x28,
-    VT1 = 0x29,
-    VT2 = 0x2A,
-    VT3 = 0x2B,
-    VT4 = 0x2C,
-    VT5 = 0x2D,
-    VT6 = 0x2E,
-    VT7 = 0x2F,
-    VT8 = 0x30,
-    DJF = 0x31,
-    IVO = 0x32,
-    ICH = 0x33,
-    IDE = 0x34,
-    IRE = 0x35,
-    IV2 = 0x36,
-    IC2 = 0x37,
-    ID2 = 0x38,
-    IR2 = 0x39,
-    USB = 0x3A,
-    // Instrument commands
-    I00 = 0x80,
-    I01 = 0x81,
-    I02 = 0x82,
-    I03 = 0x83,
-    I04 = 0x84,
-    I05 = 0x85,
-    I06 = 0x86,
-    I07 = 0x87,
-    I08 = 0x88,
-    I09 = 0x89,
-    I0A = 0x8A,
-    I0B = 0x8B,
-    I0C = 0x8C,
-    I0D = 0x8D,
-    I0E = 0x8E,
-    I8F = 0x8F,
-    I90 = 0x90,
-    I91 = 0x91,
-    I92 = 0x92,
-    I93 = 0x93,
-    I94 = 0x94,
-    I95 = 0x95,
-    I96 = 0x96,
-    I97 = 0x97,
-    I98 = 0x98,
-    I99 = 0x99,
-    I9A = 0x9A,
-    I9B = 0x9B,
-    I9C = 0x9C,
-    I9D = 0x9D,
-    I9E = 0x9E,
-    I9F = 0x9F,
-    IA0 = 0xA0,
-    IA1 = 0xA1,
-    IA2 = 0xA2,
-    // No command
-    NONE = 0xff,
-}
-impl Default for FXCommand {
-    fn default() -> FXCommand {
-        FXCommand::NONE
-    }
-}
-impl FXCommand {
-    fn from_u8(u: u8) -> Self {
-        unsafe { std::mem::transmute(u) }
+    fn format_command2(&self) -> String {
+        match self.command {
+            0x00 => format!("ARP"),
+            0x01 => format!("CHA"),
+            0x02 => format!("DEL"),
+            0x03 => format!("GRV"),
+            0x04 => format!("HOP"),
+            0x05 => format!("KIL"),
+            0x06 => format!("RAN"),
+            0x07 => format!("RET"),
+            0x08 => format!("REP"),
+            0x09 => format!("NTH"),
+            0x0A => format!("PSL"),
+            0x0B => format!("PSN"),
+            0x0C => format!("PVB"),
+            0x0D => format!("PVX"),
+            0x0E => format!("SCA"),
+            0x0F => format!("SCG"),
+            0x10 => format!("SED"),
+            0x11 => format!("SNG"),
+            0x12 => format!("TBL"),
+            0x13 => format!("THO"),
+            0x14 => format!("TIC"),
+            0x15 => format!("TPO"),
+            0x16 => format!("TSP"),
+            // FX + mixer commands
+            0x17 => format!("VMV"),
+            0x18 => format!("XCM"),
+            0x19 => format!("XCF"),
+            0x1A => format!("XCW"),
+            0x1B => format!("XCR"),
+            0x1C => format!("XDT"),
+            0x1D => format!("XDF"),
+            0x1E => format!("XDW"),
+            0x1F => format!("XDR"),
+            0x20 => format!("XRS"),
+            0x21 => format!("XRD"),
+            0x22 => format!("XRM"),
+            0x23 => format!("XRF"),
+            0x24 => format!("XRW"),
+            0x25 => format!("XRZ"),
+            0x26 => format!("VCH"),
+            0x27 => format!("VCD"),
+            0x28 => format!("VRE"),
+            0x29 => format!("VT1"),
+            0x2A => format!("VT2"),
+            0x2B => format!("VT3"),
+            0x2C => format!("VT4"),
+            0x2D => format!("VT5"),
+            0x2E => format!("VT6"),
+            0x2F => format!("VT7"),
+            0x30 => format!("VT8"),
+            0x31 => format!("DJF"),
+            0x32 => format!("IVO"),
+            0x33 => format!("ICH"),
+            0x34 => format!("IDE"),
+            0x35 => format!("IRE"),
+            0x36 => format!("IV2"),
+            0x37 => format!("IC2"),
+            0x38 => format!("ID2"),
+            0x39 => format!("IR2"),
+            0x3A => format!("USB"),
+            // Instrument commands
+            0x80 => format!("I00"),
+            0x81 => format!("I01"),
+            0x82 => format!("I02"),
+            0x83 => format!("I03"),
+            0x84 => format!("I04"),
+            0x85 => format!("I05"),
+            0x86 => format!("I06"),
+            0x87 => format!("I07"),
+            0x88 => format!("I08"),
+            0x89 => format!("I09"),
+            0x8A => format!("I0A"),
+            0x8B => format!("I0B"),
+            0x8C => format!("I0C"),
+            0x8D => format!("I0D"),
+            0x8E => format!("I0E"),
+            0x8F => format!("I8F"),
+            0x90 => format!("I90"),
+            0x91 => format!("I91"),
+            0x92 => format!("I92"),
+            0x93 => format!("I93"),
+            0x94 => format!("I94"),
+            0x95 => format!("I95"),
+            0x96 => format!("I96"),
+            0x97 => format!("I97"),
+            0x98 => format!("I98"),
+            0x99 => format!("I99"),
+            0x9A => format!("I9A"),
+            0x9B => format!("I9B"),
+            0x9C => format!("I9C"),
+            0x9D => format!("I9D"),
+            0x9E => format!("I9E"),
+            0x9F => format!("I9F"),
+            0xA0 => format!("IA0"),
+            0xA1 => format!("IA1"),
+            0xA2 => format!("IA2"),
+            // Unknown
+            _ => format!("UNK"),
+        }
     }
 
-    #[allow(dead_code)]
-    fn to_ui(self) -> u8 {
-        unsafe { std::mem::transmute(self) }
+    fn format_command3(&self) -> String {
+        // TODO format commands
+        match self.command {
+            // 0x00 => format!("ARP"),
+            // 0x01 => format!("CHA"),
+            // 0x02 => format!("DEL"),
+            // 0x03 => format!("GRV"),
+            // 0x04 => format!("HOP"),
+            // 0x05 => format!("KIL"),
+            // 0x06 => format!("RAN"),
+            // 0x07 => format!("RET"),
+            // 0x08 => format!("REP"),
+            // 0x09 => format!("NTH"),
+            // 0x0A => format!("PSL"),
+            // 0x0B => format!("PSN"),
+            // 0x0C => format!("PVB"),
+            // 0x0D => format!("PVX"),
+            // 0x0E => format!("SCA"),
+            // 0x0F => format!("SCG"),
+            // 0x10 => format!("SED"),
+            // 0x11 => format!("SNG"),
+            // 0x12 => format!("TBL"),
+            // 0x13 => format!("THO"),
+            // 0x14 => format!("TIC"),
+            // 0x15 => format!("TPO"),
+            // 0x16 => format!("TSP"),
+            // // FX + mixer commands
+            // 0x17 => format!("VMV"),
+            // 0x18 => format!("XCM"),
+            // 0x19 => format!("XCF"),
+            // 0x1A => format!("XCW"),
+            // 0x1B => format!("XCR"),
+            // 0x1C => format!("XDT"),
+            // 0x1D => format!("XDF"),
+            // 0x1E => format!("XDW"),
+            // 0x1F => format!("XDR"),
+            // 0x20 => format!("XRS"),
+            // 0x21 => format!("XRD"),
+            // 0x22 => format!("XRM"),
+            // 0x23 => format!("XRF"),
+            // 0x24 => format!("XRW"),
+            // 0x25 => format!("XRZ"),
+            // 0x26 => format!("VCH"),
+            // 0x27 => format!("VCD"),
+            // 0x28 => format!("VRE"),
+            // 0x29 => format!("VT1"),
+            // 0x2A => format!("VT2"),
+            // 0x2B => format!("VT3"),
+            // 0x2C => format!("VT4"),
+            // 0x2D => format!("VT5"),
+            // 0x2E => format!("VT6"),
+            // 0x2F => format!("VT7"),
+            // 0x30 => format!("VT8"),
+            // 0x31 => format!("DJF"),
+            // 0x32 => format!("IVO"),
+            // 0x33 => format!("ICH"),
+            // 0x34 => format!("IDE"),
+            // 0x35 => format!("IRE"),
+            // 0x36 => format!("IV2"),
+            // 0x37 => format!("IC2"),
+            // 0x38 => format!("ID2"),
+            // 0x39 => format!("IR2"),
+            // 0x3A => format!("USB"),
+            // // Instrument commands
+            // 0x80 => format!("I00"),
+            // 0x81 => format!("I01"),
+            // 0x82 => format!("I02"),
+            // 0x83 => format!("I03"),
+            // 0x84 => format!("I04"),
+            // 0x85 => format!("I05"),
+            // 0x86 => format!("I06"),
+            // 0x87 => format!("I07"),
+            // 0x88 => format!("I08"),
+            // 0x89 => format!("I09"),
+            // 0x8A => format!("I0A"),
+            // 0x8B => format!("I0B"),
+            // 0x8C => format!("I0C"),
+            // 0x8D => format!("I0D"),
+            // 0x8E => format!("I0E"),
+            // 0x8F => format!("I8F"),
+            // 0x90 => format!("I90"),
+            // 0x91 => format!("I91"),
+            // 0x92 => format!("I92"),
+            // 0x93 => format!("I93"),
+            // 0x94 => format!("I94"),
+            // 0x95 => format!("I95"),
+            // 0x96 => format!("I96"),
+            // 0x97 => format!("I97"),
+            // 0x98 => format!("I98"),
+            // 0x99 => format!("I99"),
+            // 0x9A => format!("I9A"),
+            // 0x9B => format!("I9B"),
+            // 0x9C => format!("I9C"),
+            // 0x9D => format!("I9D"),
+            // 0x9E => format!("I9E"),
+            // 0x9F => format!("I9F"),
+            // 0xA0 => format!("IA0"),
+            // 0xA1 => format!("IA1"),
+            // 0xA2 => format!("IA2"),
+            // Unknown
+            _ => format!("UNK"),
+        }
     }
 }
 
@@ -737,10 +932,173 @@ impl Instrument {
             ));
         }
         let version = Version::from_reader(&reader)?;
-        Self::from_reader(&reader, 0, version)
+        if version.at_least(3, 0) {
+            Self::from_reader3(&reader, 0, version)
+        } else {
+            Self::from_reader2(&reader, 0, version)
+        }
     }
 
-    fn from_reader(reader: &Reader, number: u8, version: Version) -> Result<Self> {
+    fn from_reader3(reader: &Reader, number: u8, version: Version) -> Result<Self> {
+        let start_pos = reader.pos();
+        println!("{:02x}", start_pos);
+        let kind = reader.read();
+        dbg!(&kind);
+        let name = reader.read_string(12);
+        dbg!(&name);
+        let transpose = reader.read_bool();
+        let table_tick = reader.read();
+        let (volume, pitch, fine_tune) = if kind != 3 {
+            (reader.read(), reader.read(), reader.read())
+        } else {
+            (0, 0, 0)
+        };
+
+        let finalize = || -> () {
+            reader.set_pos(start_pos + Self::SIZE);
+        };
+
+        Ok(match kind {
+            0x00 => {
+                let shape = reader.read();
+                let size = reader.read();
+                let mult = reader.read();
+                let warp = reader.read();
+                let mirror = reader.read();
+                let synth_params = SynthParams::from_reader(reader, volume, pitch, fine_tune)?;
+                finalize();
+                Self::WavSynth(WavSynth {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    shape,
+                    size,
+                    mult,
+                    warp,
+                    mirror,
+                })
+            }
+            0x01 => {
+                let shape = reader.read();
+                let timbre = reader.read();
+                let color = reader.read();
+                let degrade = reader.read();
+                let redux = reader.read();
+                let synth_params = SynthParams::from_reader(reader, volume, pitch, fine_tune)?;
+                finalize();
+                Self::MacroSynth(MacroSynth {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    shape,
+                    timbre,
+                    color,
+                    degrade,
+                    redux,
+                })
+            }
+            0x02 => {
+                let play_mode = reader.read();
+                let slice = reader.read();
+                let start = reader.read();
+                let loop_start = reader.read();
+                let length = reader.read();
+                let degrade = reader.read();
+                let synth_params = SynthParams::from_reader(reader, volume, pitch, fine_tune)?;
+                reader.set_pos(start_pos + 0x57);
+                let sample_path = reader.read_string(128);
+                Self::Sampler(Sampler {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    sample_path,
+                    play_mode,
+                    slice,
+                    start,
+                    loop_start,
+                    length,
+                    degrade,
+                })
+            }
+            0x03 => {
+                let port = reader.read();
+                let channel = reader.read();
+                let bank_select = reader.read();
+                let program_change = reader.read();
+                reader.read_bytes(3); // discard
+                let custom_cc: [ControlChange; 8] = arr![ControlChange::from_reader(reader)?; 8];
+                Self::MIDIOut(MIDIOut {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+
+                    port,
+                    channel,
+                    bank_select,
+                    program_change,
+                    custom_cc,
+                })
+            }
+            0x04 => {
+                let algo = reader.read();
+                let mut operators: [Operator; 4] = arr![Operator::default(); 4];
+                if version.at_least(1, 4) {
+                    for i in 0..4 {
+                        operators[i].shape = reader.read();
+                    }
+                }
+                for i in 0..4 {
+                    operators[i].ratio = reader.read();
+                    operators[i].ratio_fine = reader.read();
+                }
+                for i in 0..4 {
+                    operators[i].level = reader.read();
+                    operators[i].feedback = reader.read();
+                }
+                for i in 0..4 {
+                    operators[i].mod_a = reader.read();
+                }
+                for i in 0..4 {
+                    operators[i].mod_b = reader.read();
+                }
+                let mod1 = reader.read();
+                let mod2 = reader.read();
+                let mod3 = reader.read();
+                let mod4 = reader.read();
+                let synth_params = SynthParams::from_reader(reader, volume, pitch, fine_tune)?;
+                finalize();
+
+                Self::FMSynth(FMSynth {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    algo,
+                    operators,
+                    mod1,
+                    mod2,
+                    mod3,
+                    mod4,
+                })
+            }
+            0xFF => Self::None,
+            _ => panic!("Instrument type {} not supported", kind),
+        })
+    }
+
+    fn from_reader2(reader: &Reader, number: u8, version: Version) -> Result<Self> {
         let start_pos = reader.pos();
         let kind = reader.read();
         let name = reader.read_string(12);
