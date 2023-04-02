@@ -16,9 +16,9 @@
 //! ```
 //!
 
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
-use std::cell::RefCell;
 
 use arr_macro::arr;
 use byteorder::{ByteOrder, LittleEndian};
@@ -38,14 +38,15 @@ type Result<T> = std::result::Result<T, ParseError>;
 
 struct Reader {
     buffer: Vec<u8>,
-    position: Rc<RefCell<usize>>
+    position: Rc<RefCell<usize>>,
 }
 
 #[allow(dead_code)]
 impl Reader {
     fn new(buffer: Vec<u8>) -> Self {
         Self {
-            buffer, position: Rc::new(RefCell::new(0))
+            buffer,
+            position: Rc::new(RefCell::new(0)),
         }
     }
 
@@ -58,7 +59,7 @@ impl Reader {
 
     fn read_bytes(&self, n: usize) -> &[u8] {
         let p: usize = *self.position.borrow();
-        let bs = &self.buffer[p..p+n];
+        let bs = &self.buffer[p..p + n];
         *self.position.borrow_mut() += n;
         bs
     }
@@ -70,7 +71,9 @@ impl Reader {
     fn read_string(&self, n: usize) -> String {
         let b = self.read_bytes(n);
         let end = b.iter().position(|&x| x == 0 || x == 255).unwrap_or(0);
-        std::str::from_utf8(&b[0..end]).expect("invalid utf-8 sequence in string").to_string()
+        std::str::from_utf8(&b[0..end])
+            .expect("invalid utf-8 sequence in string")
+            .to_string()
     }
 
     fn pos(&self) -> usize {
@@ -117,9 +120,12 @@ impl fmt::Debug for Song {
             .field("quantize", &self.quantize)
             .field("key", &self.key)
             .field("song", &self.song)
-            .field("chains", &self.chains[0])
-            .field("phrases", &self.phrases[0])
-            .field("instruments", &self.instruments[0])
+            .field("chains", self.chains.get(0).unwrap_or(&Chain::default()))
+            .field("phrases", self.phrases.get(0).unwrap_or(&Phrase::default()))
+            .field(
+                "instruments",
+                self.instruments.get(0).unwrap_or(&Instrument::default()),
+            )
             .field("tables", &self.tables[0])
             .field("grooves", &self.grooves[0])
             .field("scales", &self.scales[0])
@@ -142,17 +148,21 @@ impl Song {
     const N_MIDI_MAPPINGS: usize = 128;
 
     pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
-        let mut buf: Vec<u8> = vec!();
+        let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
         let reader = Reader::new(buf);
 
         if len < Self::SIZE_PRIOR_TO_2_5 + Version::SIZE {
-            return Err(ParseError("File is not long enough to be a M8 song".to_string()));
+            return Err(ParseError(
+                "File is not long enough to be a M8 song".to_string(),
+            ));
         }
         let version = Version::from_reader(&reader)?;
         if version.at_least(2, 5) && len < Self::SIZE + Version::SIZE {
-            return Err(ParseError("File is not long enough to be a M8 song".to_string()));
+            return Err(ParseError(
+                "File is not long enough to be a M8 song".to_string(),
+            ));
         }
 
         Self::from_reader(&reader, version)
@@ -170,14 +180,18 @@ impl Song {
         let mixer_settings = MixerSettings::from_reader(reader)?;
         // println!("{:x}", reader.pos());
 
-        let grooves = (0..Self::N_GROOVES).map(|i| Groove::from_reader(reader, i as u8))
+        let grooves = (0..Self::N_GROOVES)
+            .map(|i| Groove::from_reader(reader, i as u8))
             .collect::<Result<Vec<Groove>>>()?;
         let song = SongSteps::from_reader(reader)?;
-        let phrases = (0..Self::N_PHRASES).map(|i| Phrase::from_reader(reader, i as u8))
+        let phrases = (0..Self::N_PHRASES)
+            .map(|i| Phrase::from_reader(reader, i as u8))
             .collect::<Result<Vec<Phrase>>>()?;
-        let chains = (0..Self::N_CHAINS).map(|i| Chain::from_reader(reader, i as u8))
+        let chains = (0..Self::N_CHAINS)
+            .map(|i| Chain::from_reader(reader, i as u8))
             .collect::<Result<Vec<Chain>>>()?;
-        let tables = (0..Self::N_TABLES).map(|i| Table::from_reader(reader, i as u8))
+        let tables = (0..Self::N_TABLES)
+            .map(|i| Table::from_reader(reader, i as u8))
             .collect::<Result<Vec<Table>>>()?;
         let instruments = (0..Self::N_INSTRUMENTS)
             .map(|i| Instrument::from_reader(reader, i as u8, version))
@@ -192,15 +206,20 @@ impl Song {
 
         let scales: Vec<Scale> = if version.at_least(2, 5) {
             reader.set_pos(0x1AA7E);
-            (0..Self::N_SCALES).map(|i| Scale::from_reader(reader, i as u8))
+            (0..Self::N_SCALES)
+                .map(|i| Scale::from_reader(reader, i as u8))
                 .collect::<Result<Vec<Scale>>>()?
         } else {
             (0..Self::N_SCALES)
-                .map(|i| -> Scale {let mut s = Scale::default(); s.number = i as u8; s})
+                .map(|i| -> Scale {
+                    let mut s = Scale::default();
+                    s.number = i as u8;
+                    s
+                })
                 .collect()
         };
 
-        Ok(Self{
+        Ok(Self {
             version,
             directory,
             transpose,
@@ -255,44 +274,48 @@ impl Version {
 
         reader.read_bytes(2); // Skip
         Ok(Self {
-            major, minor, patch
+            major,
+            minor,
+            patch,
         })
     }
 
     fn at_least(&self, major: u8, minor: u8) -> bool {
-        self.major > major ||
-            (self.major == major && self.minor >= minor)
+        self.major > major || (self.major == major && self.minor >= minor)
     }
 }
 
 #[derive(PartialEq, Clone)]
 pub struct SongSteps {
-    pub steps: [u8; 2048]
+    pub steps: [u8; 2048],
 }
 impl SongSteps {
-    pub fn print_screen(&self) -> String {self.print_screen_from(0) }
+    pub fn print_screen(&self) -> String {
+        self.print_screen_from(0)
+    }
 
     pub fn print_screen_from(&self, start: u8) -> String {
-        (start..start+16).fold("   1  2  3  4  5  6  7  8  \n".to_string(),
-                              |s, row| s + &self.print_row(row) + "\n"
-        )
+        (start..start + 16).fold("   1  2  3  4  5  6  7  8  \n".to_string(), |s, row| {
+            s + &self.print_row(row) + "\n"
+        })
     }
 
     pub fn print_row(&self, row: u8) -> String {
         let start = row as usize * 8;
-        (start..start+8).fold(format!("{row:02x} "),
-                              |s, b| -> String {
-                                  let v = self.steps[b];
-                                  let repr = if v == 255 { format!("-- ") }
-                                  else { format!("{:02x} ", v) };
-                                  s + &repr
-                              }
-        )
+        (start..start + 8).fold(format!("{row:02x} "), |s, b| -> String {
+            let v = self.steps[b];
+            let repr = if v == 255 {
+                format!("-- ")
+            } else {
+                format!("{:02x} ", v)
+            };
+            s + &repr
+        })
     }
 
     fn from_reader(reader: &Reader) -> Result<Self> {
         Ok(Self {
-            steps: reader.read_bytes(2048).try_into().unwrap()
+            steps: reader.read_bytes(2048).try_into().unwrap(),
         })
     }
 }
@@ -308,16 +331,16 @@ impl fmt::Debug for SongSteps {
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Chain {
     pub number: u8,
-    pub steps: [ChainStep; 16]
+    pub steps: [ChainStep; 16],
 }
 impl Chain {
     pub fn print_screen(&self) -> String {
-        (0..16).fold("  PH TSP\n".to_string(),
-                     |s, row| s + &self.steps[row].print(row as u8) + "\n"
-        )
+        (0..16).fold("  PH TSP\n".to_string(), |s, row| {
+            s + &self.steps[row].print(row as u8) + "\n"
+        })
     }
 
     fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
@@ -344,6 +367,14 @@ pub struct ChainStep {
     pub phrase: u8,
     pub transpose: u8,
 }
+impl Default for ChainStep {
+    fn default() -> Self {
+        Self {
+            phrase: 255,
+            transpose: 0,
+        }
+    }
+}
 impl ChainStep {
     pub fn print(&self, row: u8) -> String {
         if self.phrase == 255 {
@@ -361,16 +392,16 @@ impl ChainStep {
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Phrase {
     pub number: u8,
-    pub steps: [Step; 16]
+    pub steps: [Step; 16],
 }
 impl Phrase {
     pub fn print_screen(&self) -> String {
-        (0..16).fold("  N   V  I  FX1   FX2   FX3  \n".to_string(),
-                     |s, row| s + &self.steps[row].print(row as u8) + "\n"
-        )
+        (0..16).fold("  N   V  I  FX1   FX2   FX3  \n".to_string(), |s, row| {
+            s + &self.steps[row].print(row as u8) + "\n"
+        })
     }
 
     fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
@@ -392,7 +423,7 @@ impl fmt::Debug for Phrase {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Default)]
 pub struct Step {
     pub note: Note,
     pub velocity: u8,
@@ -403,12 +434,20 @@ pub struct Step {
 }
 impl Step {
     pub fn print(&self, row: u8) -> String {
-        let velocity = if self.velocity == 255 { format!("--") }
-        else { format!("{:02x}", self.velocity)};
-        let instrument = if self.instrument == 255 { format!("--") }
-        else { format!("{:02x}", self.instrument)};
-        format!("{:x} {} {} {} {} {} {}", row, self.note, velocity, instrument,
-                self.fx1, self.fx2, self.fx3)
+        let velocity = if self.velocity == 255 {
+            format!("--")
+        } else {
+            format!("{:02x}", self.velocity)
+        };
+        let instrument = if self.instrument == 255 {
+            format!("--")
+        } else {
+            format!("{:02x}", self.instrument)
+        };
+        format!(
+            "{:x} {} {} {} {} {} {}",
+            row, self.note, velocity, instrument, self.fx1, self.fx2, self.fx3
+        )
     }
 
     fn from_reader(reader: &Reader) -> Result<Self> {
@@ -425,6 +464,11 @@ impl Step {
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Note(pub u8);
+impl Default for Note {
+    fn default() -> Self {
+        Note(255)
+    }
+}
 
 impl fmt::Display for Note {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -445,7 +489,7 @@ impl fmt::Display for Note {
                 9 => "A-",
                 10 => "A#",
                 11 => "B-",
-                _ => panic!()
+                _ => panic!(),
             };
             write!(f, "{}{:X}", n, oct)
         }
@@ -455,13 +499,13 @@ impl fmt::Display for Note {
 #[derive(PartialEq, Clone)]
 pub struct Table {
     pub number: u8,
-    pub steps: [TableStep; 16]
+    pub steps: [TableStep; 16],
 }
 impl Table {
     pub fn print_screen(&self) -> String {
-        (0..16).fold("  N  V  FX1   FX2   FX3  \n".to_string(),
-                     |s, row| s + &self.steps[row].print(row as u8) + "\n"
-        )
+        (0..16).fold("  N  V  FX1   FX2   FX3  \n".to_string(), |s, row| {
+            s + &self.steps[row].print(row as u8) + "\n"
+        })
     }
 
     fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
@@ -483,7 +527,6 @@ impl fmt::Debug for Table {
     }
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct TableStep {
     pub transpose: u8,
@@ -494,12 +537,20 @@ pub struct TableStep {
 }
 impl TableStep {
     pub fn print(&self, row: u8) -> String {
-        let transpose = if self.transpose == 255 { format!("--") }
-        else { format!("{:02x}", self.transpose)};
-        let velocity = if self.velocity == 255 { format!("--") }
-        else { format!("{:02x}", self.velocity)};
-        format!("{:x} {} {} {} {} {}", row, transpose, velocity,
-                self.fx1, self.fx2, self.fx3)
+        let transpose = if self.transpose == 255 {
+            format!("--")
+        } else {
+            format!("{:02x}", self.transpose)
+        };
+        let velocity = if self.velocity == 255 {
+            format!("--")
+        } else {
+            format!("{:02x}", self.velocity)
+        };
+        format!(
+            "{:x} {} {} {} {} {}",
+            row, transpose, velocity, self.fx1, self.fx2, self.fx3
+        )
     }
 
     fn from_reader(reader: &Reader) -> Result<Self> {
@@ -513,11 +564,10 @@ impl TableStep {
     }
 }
 
-
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Default)]
 pub struct FX {
     pub command: FXCommand,
-    pub value: u8
+    pub value: u8,
 }
 impl FX {
     fn from_reader(reader: &Reader) -> Result<Self> {
@@ -543,113 +593,118 @@ impl fmt::Display for FX {
 #[allow(dead_code)]
 pub enum FXCommand {
     // Sequencer commands
-    ARP =  0x00,
-    CHA =  0x01,
-    DEL =  0x02,
-    GRV =  0x03,
-    HOP =  0x04,
-    KIL =  0x05,
-    RAN =  0x06,
-    RET =  0x07,
-    REP =  0x08,
-    NTH =  0x09,
-    PSL =  0x0A,
-    PSN =  0x0B,
-    PVB =  0x0C,
-    PVX =  0x0D,
-    SCA =  0x0E,
-    SCG =  0x0F,
-    SED =  0x10,
-    SNG =  0x11,
-    TBL =  0x12,
-    THO =  0x13,
-    TIC =  0x14,
-    TPO =  0x15,
-    TSP =  0x16,
+    ARP = 0x00,
+    CHA = 0x01,
+    DEL = 0x02,
+    GRV = 0x03,
+    HOP = 0x04,
+    KIL = 0x05,
+    RAN = 0x06,
+    RET = 0x07,
+    REP = 0x08,
+    NTH = 0x09,
+    PSL = 0x0A,
+    PSN = 0x0B,
+    PVB = 0x0C,
+    PVX = 0x0D,
+    SCA = 0x0E,
+    SCG = 0x0F,
+    SED = 0x10,
+    SNG = 0x11,
+    TBL = 0x12,
+    THO = 0x13,
+    TIC = 0x14,
+    TPO = 0x15,
+    TSP = 0x16,
     // FX + mixer commands
-    VMV =  0x17,
-    XCM =  0x18,
-    XCF =  0x19,
-    XCW =  0x1A,
-    XCR =  0x1B,
-    XDT =  0x1C,
-    XDF =  0x1D,
-    XDW =  0x1E,
-    XDR =  0x1F,
-    XRS =  0x20,
-    XRD =  0x21,
-    XRM =  0x22,
-    XRF =  0x23,
-    XRW =  0x24,
-    XRZ =  0x25,
-    VCH =  0x26,
-    VCD =  0x27,
-    VRE =  0x28,
-    VT1 =  0x29,
-    VT2 =  0x2A,
-    VT3 =  0x2B,
-    VT4 =  0x2C,
-    VT5 =  0x2D,
-    VT6 =  0x2E,
-    VT7 =  0x2F,
-    VT8 =  0x30,
-    DJF =  0x31,
-    IVO =  0x32,
-    ICH =  0x33,
-    IDE =  0x34,
-    IRE =  0x35,
-    IV2 =  0x36,
-    IC2 =  0x37,
-    ID2 =  0x38,
-    IR2 =  0x39,
-    USB =  0x3A,
+    VMV = 0x17,
+    XCM = 0x18,
+    XCF = 0x19,
+    XCW = 0x1A,
+    XCR = 0x1B,
+    XDT = 0x1C,
+    XDF = 0x1D,
+    XDW = 0x1E,
+    XDR = 0x1F,
+    XRS = 0x20,
+    XRD = 0x21,
+    XRM = 0x22,
+    XRF = 0x23,
+    XRW = 0x24,
+    XRZ = 0x25,
+    VCH = 0x26,
+    VCD = 0x27,
+    VRE = 0x28,
+    VT1 = 0x29,
+    VT2 = 0x2A,
+    VT3 = 0x2B,
+    VT4 = 0x2C,
+    VT5 = 0x2D,
+    VT6 = 0x2E,
+    VT7 = 0x2F,
+    VT8 = 0x30,
+    DJF = 0x31,
+    IVO = 0x32,
+    ICH = 0x33,
+    IDE = 0x34,
+    IRE = 0x35,
+    IV2 = 0x36,
+    IC2 = 0x37,
+    ID2 = 0x38,
+    IR2 = 0x39,
+    USB = 0x3A,
     // Instrument commands
-    I00 =  0x80,
-    I01 =  0x81,
-    I02 =  0x82,
-    I03 =  0x83,
-    I04 =  0x84,
-    I05 =  0x85,
-    I06 =  0x86,
-    I07 =  0x87,
-    I08 =  0x88,
-    I09 =  0x89,
-    I0A =  0x8A,
-    I0B =  0x8B,
-    I0C =  0x8C,
-    I0D =  0x8D,
-    I0E =  0x8E,
-    I8F =  0x8F,
-    I90 =  0x90,
-    I91 =  0x91,
-    I92 =  0x92,
-    I93 =  0x93,
-    I94 =  0x94,
-    I95 =  0x95,
-    I96 =  0x96,
-    I97 =  0x97,
-    I98 =  0x98,
-    I99 =  0x99,
-    I9A =  0x9A,
-    I9B =  0x9B,
-    I9C =  0x9C,
-    I9D =  0x9D,
-    I9E =  0x9E,
-    I9F =  0x9F,
-    IA0 =  0xA0,
-    IA1 =  0xA1,
-    IA2 =  0xA2,
+    I00 = 0x80,
+    I01 = 0x81,
+    I02 = 0x82,
+    I03 = 0x83,
+    I04 = 0x84,
+    I05 = 0x85,
+    I06 = 0x86,
+    I07 = 0x87,
+    I08 = 0x88,
+    I09 = 0x89,
+    I0A = 0x8A,
+    I0B = 0x8B,
+    I0C = 0x8C,
+    I0D = 0x8D,
+    I0E = 0x8E,
+    I8F = 0x8F,
+    I90 = 0x90,
+    I91 = 0x91,
+    I92 = 0x92,
+    I93 = 0x93,
+    I94 = 0x94,
+    I95 = 0x95,
+    I96 = 0x96,
+    I97 = 0x97,
+    I98 = 0x98,
+    I99 = 0x99,
+    I9A = 0x9A,
+    I9B = 0x9B,
+    I9C = 0x9C,
+    I9D = 0x9D,
+    I9E = 0x9E,
+    I9F = 0x9F,
+    IA0 = 0xA0,
+    IA1 = 0xA1,
+    IA2 = 0xA2,
     // No command
-    NONE = 0xff
+    NONE = 0xff,
 }
-impl FXCommand  {
+impl Default for FXCommand {
+    fn default() -> FXCommand {
+        FXCommand::NONE
+    }
+}
+impl FXCommand {
     fn from_u8(u: u8) -> Self {
-        unsafe { std::mem::transmute(u)}
+        unsafe { std::mem::transmute(u) }
     }
 
     #[allow(dead_code)]
     fn to_ui(self) -> u8 {
-        unsafe { std::mem::transmute(self)}
+        unsafe { std::mem::transmute(self) }
     }
 }
 
@@ -662,17 +717,24 @@ pub enum Instrument {
     FMSynth(FMSynth),
     None,
 }
+impl Default for Instrument {
+    fn default() -> Self {
+        Self::None
+    }
+}
 impl Instrument {
     const SIZE: usize = 215;
 
     pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
-        let mut buf: Vec<u8> = vec!();
+        let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
         let reader = Reader::new(buf);
 
         if len < Self::SIZE + Version::SIZE {
-            return Err(ParseError("File is not long enough to be a M8 Instrument".to_string()));
+            return Err(ParseError(
+                "File is not long enough to be a M8 Instrument".to_string(),
+            ));
         }
         let version = Version::from_reader(&reader)?;
         Self::from_reader(&reader, 0, version)
@@ -686,9 +748,13 @@ impl Instrument {
         let table_tick = reader.read();
         let (volume, pitch, fine_tune) = if kind != 3 {
             (reader.read(), reader.read(), reader.read())
-        } else { (0, 0, 0) };
+        } else {
+            (0, 0, 0)
+        };
 
-        let finalize = || -> () { reader.set_pos(start_pos + Self::SIZE); };
+        let finalize = || -> () {
+            reader.set_pos(start_pos + Self::SIZE);
+        };
 
         Ok(match kind {
             0x00 => {
@@ -826,7 +892,7 @@ impl Instrument {
                 })
             }
             0xFF => Self::None,
-            _ => panic!("Instrument type {} not supported", kind)
+            _ => panic!("Instrument type {} not supported", kind),
         })
     }
 }
@@ -908,7 +974,6 @@ pub struct MIDIOut {
     pub custom_cc: [ControlChange; 8],
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct SynthParams {
     pub volume: u8,
@@ -932,7 +997,7 @@ pub struct SynthParams {
     pub lfos: [LFO; 2],
 }
 impl SynthParams {
-    fn from_reader(reader: &Reader, volume: u8, pitch:u8, fine_tune: u8) -> Result<Self> {
+    fn from_reader(reader: &Reader, volume: u8, pitch: u8, fine_tune: u8) -> Result<Self> {
         Ok(Self {
             volume,
             pitch,
@@ -979,7 +1044,6 @@ impl Envelope {
     }
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct LFO {
     pub shape: u8,
@@ -1021,24 +1085,23 @@ pub struct ControlChange {
 }
 impl ControlChange {
     fn from_reader(reader: &Reader) -> Result<Self> {
-        Ok(Self{
+        Ok(Self {
             number: reader.read(),
             default_value: reader.read(),
         })
     }
 }
 
-
 #[derive(PartialEq, Clone)]
 pub struct Groove {
     pub number: u8,
-    pub steps: [u8; 16]
+    pub steps: [u8; 16],
 }
 impl Groove {
     fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
         Ok(Self {
             number,
-            steps: reader.read_bytes(16).try_into().unwrap()
+            steps: reader.read_bytes(16).try_into().unwrap(),
         })
     }
 
@@ -1063,24 +1126,25 @@ impl fmt::Debug for Groove {
 pub struct Scale {
     pub number: u8,
     pub name: String,
-    pub notes: [NoteOffset; 12] // Offsets for notes C-B
+    pub notes: [NoteOffset; 12], // Offsets for notes C-B
 }
 impl Scale {
     const SIZE: usize = 32;
 
     pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
-        let mut buf: Vec<u8> = vec!();
+        let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
         let reader = Reader::new(buf);
 
         if len < Self::SIZE + Version::SIZE {
-            return Err(ParseError("File is not long enough to be a M8 Scale".to_string()));
+            return Err(ParseError(
+                "File is not long enough to be a M8 Scale".to_string(),
+            ));
         }
         Version::from_reader(&reader)?;
         Self::from_reader(&reader, 0)
     }
-
 
     fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
         let map = LittleEndian::read_u16(reader.read_bytes(2));
@@ -1104,27 +1168,37 @@ impl Scale {
         Self {
             number: 0,
             name: "CHROMATIC".to_string(),
-            notes: arr![NoteOffset::default(); 12]
+            notes: arr![NoteOffset::default(); 12],
         }
     }
 }
 
 impl fmt::Display for Scale {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let notes = vec!["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-        let offsets = self.notes.iter().zip(notes.iter()).map(|(offset, note)| -> String {
-            let s = if offset.enabled {
-                let sign = if offset.semitones < 0.0 { "-" } else { " " };
-                format!(" ON{}{:02.2}", sign, offset.semitones.abs())
-            } else {
-                " -- -- --".to_string()
-            };
-            format!("{:<2}{}", note, &s)
-        }).collect::<Vec<String>>()
+        let notes = vec![
+            "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+        ];
+        let offsets = self
+            .notes
+            .iter()
+            .zip(notes.iter())
+            .map(|(offset, note)| -> String {
+                let s = if offset.enabled {
+                    let sign = if offset.semitones < 0.0 { "-" } else { " " };
+                    format!(" ON{}{:02.2}", sign, offset.semitones.abs())
+                } else {
+                    " -- -- --".to_string()
+                };
+                format!("{:<2}{}", note, &s)
+            })
+            .collect::<Vec<String>>()
             .join("\n");
 
-        write!(f, "Scale {}\nKEY   C\n\n   EN OFFSET\n{}\n\nNAME  {}",
-               self.number, offsets, &self.name)
+        write!(
+            f,
+            "Scale {}\nKEY   C\n\n   EN OFFSET\n{}\n\nNAME  {}",
+            self.number, offsets, &self.name
+        )
     }
 }
 impl fmt::Debug for Scale {
@@ -1140,7 +1214,10 @@ pub struct NoteOffset {
 }
 impl NoteOffset {
     fn default() -> Self {
-        Self { enabled: true, semitones: 0.0 }
+        Self {
+            enabled: true,
+            semitones: 0.0,
+        }
     }
 }
 
@@ -1386,18 +1463,19 @@ impl Theme {
     const SIZE: usize = 39;
 
     pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
-        let mut buf: Vec<u8> = vec!();
+        let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
         let reader = Reader::new(buf);
 
         if len < Self::SIZE + Version::SIZE {
-            return Err(ParseError("File is not long enough to be a M8 Theme".to_string()));
+            return Err(ParseError(
+                "File is not long enough to be a M8 Theme".to_string(),
+            ));
         }
         Version::from_reader(&reader)?;
         Self::from_reader(&reader)
     }
-
 
     fn from_reader(reader: &Reader) -> Result<Self> {
         Ok(Self {
