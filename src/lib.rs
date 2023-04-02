@@ -10,8 +10,8 @@
 //! ```
 //! use m8_files::*;
 //!
-//! let mut f = std::fs::File::open(&args[1]).unwrap();
-//! let song = Song::read(&mut f)?;
+//! let mut f = std::fs::File::open("./examples/songs/TEST-FILE.m8s").unwrap();
+//! let song = Song::read(&mut f).unwrap();
 //! dbg!(song);
 //! ```
 //!
@@ -2120,5 +2120,53 @@ impl RGB {
             g: reader.read(),
             b: reader.read(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use std::fs::File;
+
+    fn test_file() -> Song {
+        let mut f = File::open("./examples/songs/TEST-FILE.m8s").expect("Could not open TEST-FILE");
+        Song::read(&mut f).expect("Could not parse TEST-FILE")
+    }
+
+    #[test]
+    fn test_instrument_reading() {
+        let test_file = test_file();
+        assert!(match &test_file.instruments[0] {
+            Instrument::None => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[1] {
+            Instrument::WavSynth(_) => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[2] {
+            Instrument::MacroSynth(_) => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[3] {
+            Instrument::Sampler(_) => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[4] {
+            Instrument::FMSynth(_) => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[5] {
+            Instrument::Hyper => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[6] {
+            Instrument::MIDIOut(_) => true,
+            _ => false,
+        });
+        assert!(match &test_file.instruments[7] {
+            Instrument::External => true,
+            _ => false,
+        });
     }
 }
