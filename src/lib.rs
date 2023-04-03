@@ -246,6 +246,7 @@ impl Song {
     }
 
     fn from_reader3(reader: &Reader, version: Version) -> Result<Self> {
+        // TODO read groove, scale
         let directory = reader.read_string(128);
         let transpose = reader.read();
         let tempo = LittleEndian::read_f32(reader.read_bytes(4));
@@ -2176,6 +2177,7 @@ pub struct MixerSettings {
     pub usb_input: InputMixerSettings,
     pub dj_filter: u8,
     pub dj_peak: u8,
+    pub dj_filter_type: u8,
 }
 impl MixerSettings {
     fn from_reader(reader: &Reader) -> Result<Self> {
@@ -2221,8 +2223,9 @@ impl MixerSettings {
 
         let dj_filter = reader.read();
         let dj_peak = reader.read();
+        let dj_filter_type = reader.read();
 
-        reader.read_bytes(5); // discard
+        reader.read_bytes(4); // discard
         Ok(Self {
             master_volume,
             master_limit,
@@ -2234,6 +2237,7 @@ impl MixerSettings {
             usb_input,
             dj_filter,
             dj_peak,
+            dj_filter_type,
         })
     }
 }
@@ -2616,5 +2620,25 @@ mod tests {
             }
             _ => false,
         });
+    }
+
+    #[test]
+    fn test_mixer_reading() {
+        let test_file = test_file();
+        // dbg!(&test_file.mixer_settings);
+        assert_eq!(test_file.mixer_settings.track_volume[0], 0xE0);
+        assert_eq!(test_file.mixer_settings.track_volume[7], 0xE0);
+        assert_eq!(test_file.mixer_settings.dj_filter, 0x80);
+        assert_eq!(test_file.mixer_settings.dj_filter_type, 0x02);
+    }
+
+    #[test]
+    fn test_song_reading() {
+        let test_file = test_file();
+        // dbg!(&test_file);
+        assert_eq!(test_file.name, "TEST-FILE");
+        assert_eq!(test_file.tempo, 120.0);
+        assert_eq!(test_file.transpose, 0x0C);
+        assert_eq!(test_file.quantize, 0x02);
     }
 }
