@@ -1139,8 +1139,8 @@ pub enum Instrument {
     Sampler(Sampler),
     MIDIOut(MIDIOut),
     FMSynth(FMSynth),
-    Hyper,    // TODO
-    External, // TODO
+    HyperSynth(HyperSynth),
+    External(ExternalInst),
     None,
 }
 impl Default for Instrument {
@@ -1340,9 +1340,8 @@ impl Instrument {
 
     fn from_reader3(reader: &Reader, number: u8, version: Version) -> Result<Self> {
         let start_pos = reader.pos();
-        println!("start pos: {:02x} ({})", start_pos, start_pos);
+        // println!("inst start pos: {:02x} ({})", start_pos, start_pos);
         let kind = reader.read();
-        dbg!(kind);
         let name = reader.read_string(12);
         let transpose = reader.read_bool();
         let table_tick = reader.read();
@@ -1363,13 +1362,7 @@ impl Instrument {
                 let mult = reader.read();
                 let warp = reader.read();
                 let mirror = reader.read();
-                println!("synth params pos: {:02x} ({})", reader.pos(), reader.pos());
                 let synth_params = SynthParams::from_reader3(reader, volume, pitch, fine_tune, 30)?;
-                println!(
-                    "synth params end pos: {:02x} ({})",
-                    reader.pos(),
-                    reader.pos()
-                );
                 finalize();
                 Self::WavSynth(WavSynth {
                     number,
@@ -1503,14 +1496,62 @@ impl Instrument {
                 })
             }
             0x05 => {
-                // Hyper
+                // HyperSynth
+
+                let chord = arr![reader.read(); 7];
+                let scale = reader.read();
+                let shift = reader.read();
+                let swarm = reader.read();
+                let width = reader.read();
+                let subosc = reader.read();
+                let synth_params = SynthParams::from_reader3(reader, volume, pitch, fine_tune, 23)?;
+
                 finalize();
-                Self::Hyper
+                Self::HyperSynth(HyperSynth {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    scale,
+                    chord,
+                    shift,
+                    swarm,
+                    width,
+                    subosc,
+                })
             }
             0x06 => {
                 // External
+                let input = reader.read();
+                let port = reader.read();
+                let channel = reader.read();
+                let bank = reader.read();
+                let program = reader.read();
+                let cca = CC::new(reader.read(), reader.read());
+                let ccb = CC::new(reader.read(), reader.read());
+                let ccc = CC::new(reader.read(), reader.read());
+                let ccd = CC::new(reader.read(), reader.read());
+                let synth_params = SynthParams::from_reader3(reader, volume, pitch, fine_tune, 22)?;
                 finalize();
-                Self::External
+                Self::External(ExternalInst {
+                    number,
+                    name,
+                    transpose,
+                    table_tick,
+                    synth_params,
+
+                    input,
+                    port,
+                    channel,
+                    bank,
+                    program,
+                    cca,
+                    ccb,
+                    ccc,
+                    ccd,
+                })
             }
             0xFF => {
                 finalize();
@@ -1598,6 +1639,53 @@ pub struct MIDIOut {
     pub custom_cc: [ControlChange; 8],
 
     pub mods: [Mod; 4],
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct HyperSynth {
+    pub number: u8,
+    pub name: String,
+    pub transpose: bool,
+    pub table_tick: u8,
+    pub synth_params: SynthParams,
+
+    pub scale: u8,
+    pub chord: [u8; 7],
+    pub shift: u8,
+    pub swarm: u8,
+    pub width: u8,
+    pub subosc: u8,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct ExternalInst {
+    pub number: u8,
+    pub name: String,
+    pub transpose: bool,
+    pub table_tick: u8,
+    pub synth_params: SynthParams,
+
+    pub input: u8,
+    pub port: u8,
+    pub channel: u8,
+    pub bank: u8,
+    pub program: u8,
+    pub cca: CC,
+    pub ccb: CC,
+    pub ccc: CC,
+    pub ccd: CC,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct CC {
+    cc: u8,
+    amount: u8,
+}
+
+impl CC {
+    pub fn new(cc: u8, amount: u8) -> Self {
+        Self { cc, amount }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -1713,7 +1801,7 @@ impl Mod {
         let ty = first_byte >> 4;
         let dest = first_byte & 0x0F;
 
-        dbg!(ty, dest, start_pos);
+        // dbg!(ty, dest, start_pos);
         let r = match ty {
             0 => Mod::AHDEnv(AHDEnv::from_reader3(reader, dest)?),
             1 => Mod::ADSREnv(ADSREnv::from_reader(reader, dest)?),
@@ -2344,36 +2432,188 @@ mod tests {
     #[test]
     fn test_instrument_reading() {
         let test_file = test_file();
+        // dbg!(&test_file.instruments[0..8]);
         assert!(match &test_file.instruments[0] {
             Instrument::None => true,
             _ => false,
         });
-        assert!(match &test_file.instruments[1] {
-            Instrument::WavSynth(_) => true,
-            _ => false,
-        });
+        assert!(
+            match &test_file.instruments[1] {
+                Instrument::WavSynth(s) => {
+                    assert_eq!(s.transpose, true);
+                    assert_eq!(s.size, 0x20);
+                    assert_eq!(s.synth_params.mixer_reverb, 0xD0);
+                    assert!(match s.synth_params.mods[0] {
+                        Mod::AHDEnv(_) => true,
+                        _ => false,
+                    });
+                    assert!(match s.synth_params.mods[1] {
+                        Mod::ADSREnv(_) => true,
+                        _ => false,
+                    });
+                    assert!(match s.synth_params.mods[2] {
+                        Mod::DrumEnv(_) => true,
+                        _ => false,
+                    });
+                    assert!(match s.synth_params.mods[3] {
+                        Mod::LFO(_) => true,
+                        _ => false,
+                    });
+
+                    true
+                }
+                _ => false,
+            },
+            "Should be a WavSynth"
+        );
         assert!(match &test_file.instruments[2] {
-            Instrument::MacroSynth(_) => true,
+            Instrument::MacroSynth(s) => {
+                assert_eq!(s.transpose, false);
+                assert!(match s.synth_params.mods[0] {
+                    Mod::TrigEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[1] {
+                    Mod::TrackingEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+
+                true
+            }
             _ => false,
         });
         assert!(match &test_file.instruments[3] {
-            Instrument::Sampler(_) => true,
+            Instrument::Sampler(s) => {
+                assert!(match s.synth_params.mods[0] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[1] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+
+                assert_eq!(&s.name, "SAMP");
+                assert_eq!(
+                    &s.sample_path,
+                    "/Samples/Drums/Hits/TR505/bass drum 505.wav"
+                );
+
+                true
+            }
             _ => false,
         });
         assert!(match &test_file.instruments[4] {
-            Instrument::FMSynth(_) => true,
+            Instrument::FMSynth(s) => {
+                assert!(match s.synth_params.mods[0] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[1] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+
+                true
+            }
             _ => false,
         });
         assert!(match &test_file.instruments[5] {
-            Instrument::Hyper => true,
+            Instrument::HyperSynth(s) => {
+                assert!(match s.synth_params.mods[0] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[1] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert_eq!(s.scale, 0xFF);
+                assert_eq!(s.chord[0], 0x01);
+                assert_eq!(s.chord[6], 0x3C);
+
+                true
+            }
             _ => false,
         });
         assert!(match &test_file.instruments[6] {
-            Instrument::MIDIOut(_) => true,
+            Instrument::MIDIOut(s) => {
+                assert!(match s.mods[0] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.mods[1] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                true
+            }
             _ => false,
         });
         assert!(match &test_file.instruments[7] {
-            Instrument::External => true,
+            Instrument::External(s) => {
+                assert!(match s.synth_params.mods[0] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[1] {
+                    Mod::AHDEnv(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[2] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+                assert!(match s.synth_params.mods[3] {
+                    Mod::LFO(_) => true,
+                    _ => false,
+                });
+
+                assert_eq!(s.cca.cc, 1);
+                assert_eq!(s.ccb.cc, 2);
+                assert_eq!(s.ccd.cc, 4);
+                true
+            }
             _ => false,
         });
     }
