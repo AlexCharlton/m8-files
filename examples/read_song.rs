@@ -1,13 +1,13 @@
+use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::env;
 
 use m8_files::*;
 
 fn main() {
     match run() {
         Ok(_) => (),
-        Err(err) => println!("Error: {}", err)
+        Err(err) => println!("Error: {}", err),
     }
 }
 
