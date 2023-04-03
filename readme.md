@@ -23,7 +23,7 @@ $ cargo add play-files
 Load an example song:
 ```
 $ cargo run --example read_song -- examples/songs/DEFAULT.m8s
-``**
+```
 
 ## TODO
 - Add song groove, scale, note_preview
