@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/m8-files)](https://crates.io/crates/m8-files)
 [![Docs.rs](https://docs.rs/m8-files/badge.svg)](https://docs.rs/m8-files)
+[![CI](https://github.com/AlexCharlton/m8-files/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexCharlton/m8-files/actions/workflows/ci.yml)
 
 Reads [Dirtwave M8](https://dirtywave.com/) files into Rust structs.
 
