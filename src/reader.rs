@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
 
 #[derive(PartialEq, Debug)]
 pub struct ParseError(pub String);
@@ -13,53 +11,59 @@ impl fmt::Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
-pub type Result<T> = std::result::Result<T, ParseError>;
+/// Spefic result type for M8 song parsing
+pub type M8Result<T> = std::result::Result<T, ParseError>;
 
 pub struct Reader {
     buffer: Vec<u8>,
-    position: Rc<RefCell<usize>>,
+    position: usize,
 }
 
 #[allow(dead_code)]
 impl Reader {
     pub fn new(buffer: Vec<u8>) -> Self {
-        Self {
-            buffer,
-            position: Rc::new(RefCell::new(0)),
-        }
+        Self { buffer, position: 0, }
     }
 
-    pub fn read(&self) -> u8 {
-        let p: usize = *self.position.borrow();
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn read(&mut self) -> u8 {
+        let p: usize = self.position;
         let b = self.buffer[p];
-        *self.position.borrow_mut() += 1;
+        self.position += 1;
         b
     }
 
-    pub fn read_bytes(&self, n: usize) -> &[u8] {
-        let p: usize = *self.position.borrow();
+    pub fn read_bytes(&mut self, n: usize) -> &[u8] {
+        let p: usize = self.position;
         let bs = &self.buffer[p..p + n];
-        *self.position.borrow_mut() += n;
+        self.position += n;
         bs
     }
 
-    pub fn read_bool(&self) -> bool {
+    pub fn read_bool(&mut self) -> bool {
         self.read() == 1
     }
 
-    pub fn read_string(&self, n: usize) -> String {
+    pub fn read_string(&mut self, n: usize) -> String {
         let b = self.read_bytes(n);
-        let end = b.iter().position(|&x| x == 0 || x == 255).unwrap_or(0);
-        std::str::from_utf8(&b[0..end])
-            .expect("invalid utf-8 sequence in string")
-            .to_string()
+        let mut end = b.iter().position(|&x| x == 0 || x == 255).unwrap_or(n);
+
+        while end > 0 {
+            match std::str::from_utf8(&b[0..end]) {
+                Ok(str) => return str.to_string(),
+                Err(_) => end -= 1
+            }
+        }
+        
+        String::from("")
     }
 
-    pub fn pos(&self) -> usize {
-        *self.position.borrow()
-    }
+    pub fn pos(&self) -> usize { self.position }
 
-    pub fn set_pos(&self, n: usize) {
-        *self.position.borrow_mut() = n;
+    pub fn set_pos(&mut self, n: usize) {
+        self.position = n;
     }
 }

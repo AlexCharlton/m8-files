@@ -34,6 +34,16 @@ $ cargo run --example read_song -- examples/songs/DEFAULT.m8s
 - Displays: MixerSettings, EffectsSettings, Instrument, MidiSettings, MidiMapping
 
 ## Changelog
+
+### 0.3
+
+- v4 reading
+- v4 overwriting, you can load, modify elements and rewrite the same song.
+  * Does not work with song other than v4/v4.1
+- Added EQ with plotting
+- Mapped all FX instruction depending on the names
+- Mapped enums to many instrument parameters with human readable information
+
 ### 0.2
 - Add V3 support
 - Fix instrument alignment issues

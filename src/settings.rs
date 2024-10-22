@@ -1,4 +1,4 @@
-use crate::reader::*;
+use crate::{reader::*, Version};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct MidiSettings {
@@ -16,8 +16,11 @@ pub struct MidiSettings {
     pub track_input_program_change: bool,
     pub track_input_mode: u8,
 }
-impl MidiSettings {
-    pub(crate) fn from_reader(reader: &Reader) -> Result<Self> {
+
+impl TryFrom<&mut Reader> for MidiSettings {
+    type Error = ParseError;
+
+    fn try_from(reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
             receive_sync: reader.read_bool(),
             receive_transport: reader.read(),
@@ -33,6 +36,7 @@ impl MidiSettings {
             track_input_program_change: reader.read_bool(),
             track_input_mode: reader.read(),
         })
+
     }
 }
 
@@ -50,8 +54,9 @@ pub struct MixerSettings {
     pub dj_peak: u8,
     pub dj_filter_type: u8,
 }
+
 impl MixerSettings {
-    pub(crate) fn from_reader(reader: &Reader) -> Result<Self> {
+    pub(crate) fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         let master_volume = reader.read();
         let master_limit = reader.read();
         let track_volume: [u8; 8] = reader.read_bytes(8).try_into().unwrap();
@@ -150,14 +155,20 @@ pub struct EffectsSettings {
     pub reverb_width: u8,
 }
 impl EffectsSettings {
-    pub(crate) fn from_reader(reader: &Reader) -> Result<Self> {
+    pub(crate) fn from_reader(reader: &mut Reader, version: Version) -> M8Result<Self> {
         let chorus_mod_depth = reader.read();
         let chorus_mod_freq = reader.read();
         let chorus_reverb_send = reader.read();
         reader.read_bytes(3); //unused
 
-        let delay_hp = reader.read();
-        let delay_lp = reader.read();
+        // THIS likely changed :()
+        let (delay_hp, delay_lp) =
+            if version.at_least(4, 0) {
+                (0, 0)
+            } else {
+                (reader.read(), reader.read())
+            };
+        
         let delay_time_l = reader.read();
         let delay_time_r = reader.read();
         let delay_feedback = reader.read();
@@ -165,8 +176,14 @@ impl EffectsSettings {
         let delay_reverb_send = reader.read();
         reader.read_bytes(1); //unused
 
-        let reverb_hp = reader.read();
-        let reverb_lp = reader.read();
+        // This likely changed :()
+        let (reverb_hp, reverb_lp) =
+            if version.at_least(4, 0) {
+                (0, 0)
+            } else {
+                (reader.read(), reader.read())
+            };
+
         let reverb_size = reader.read();
         let reverb_damping = reader.read();
         let reverb_mod_depth = reader.read();
@@ -207,8 +224,9 @@ pub struct MidiMapping {
     pub min_value: u8,
     pub max_value: u8,
 }
+
 impl MidiMapping {
-    pub(crate) fn from_reader(reader: &Reader) -> Result<Self> {
+    pub(crate) fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
             channel: reader.read(),
             control_number: reader.read(),

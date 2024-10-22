@@ -20,22 +20,22 @@ pub struct Theme {
 impl Theme {
     const SIZE: usize = 39;
 
-    pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
+    pub fn read(reader: &mut impl std::io::Read) -> M8Result<Self> {
         let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
-        let reader = Reader::new(buf);
+        let mut reader = Reader::new(buf);
 
         if len < Self::SIZE + Version::SIZE {
             return Err(ParseError(
                 "File is not long enough to be a M8 Theme".to_string(),
             ));
         }
-        Version::from_reader(&reader)?;
-        Self::from_reader(&reader)
+        Version::from_reader(&mut reader)?;
+        Self::from_reader(&mut reader)
     }
 
-    fn from_reader(reader: &Reader) -> Result<Self> {
+    fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
             background: RGB::from_reader(reader)?,
             text_empty: RGB::from_reader(reader)?,
@@ -60,8 +60,9 @@ pub struct RGB {
     pub g: u8,
     pub b: u8,
 }
+
 impl RGB {
-    fn from_reader(reader: &Reader) -> Result<Self> {
+    fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
             r: reader.read(),
             g: reader.read(),

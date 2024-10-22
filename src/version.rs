@@ -1,4 +1,4 @@
-use crate::reader::*;
+use crate::{reader::*, writer::Writer};
 
 use std::fmt;
 
@@ -12,7 +12,7 @@ pub struct Version {
 impl Default for Version {
     fn default() -> Self {
         Self {
-            major: 3,
+            major: 4,
             minor: 0,
             patch: 0,
         }
@@ -32,9 +32,16 @@ impl fmt::Debug for Version {
 }
 
 impl Version {
-    pub(crate) const SIZE: usize = 14;
+    pub const SIZE: usize = 14;
 
-    pub(crate) fn from_reader(reader: &Reader) -> Result<Self> {
+    pub fn write(&self, w: &mut Writer) {
+        w.write(self.major);
+        w.write((self.minor << 4) | self.patch);
+        w.write(0);
+        w.write(0);
+    }
+
+    pub fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         let _version_string = reader.read_bytes(10);
         let lsb = reader.read();
         let msb = reader.read();
