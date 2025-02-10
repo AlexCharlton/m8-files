@@ -2,7 +2,7 @@ use std::env;
 use std::error::Error;
 use std::fs::File;
 
-use m8_files::song::*;
+use m8_files::*;
 
 fn main() {
     match run() {

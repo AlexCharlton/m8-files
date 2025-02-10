@@ -35,7 +35,7 @@ impl Default for FX {
 
 
 //////////////////////////////////////////
-/// MARK: V2 commands
+// MARK: V2 commands
 //////////////////////////////////////////
 const SEQ_COMMAND_V2 : [&'static str; 23] =
     [
@@ -108,7 +108,7 @@ const COMMANDS_V2 : [&'static str; concat_arrays_size!(SEQ_COMMAND_V2, FX_MIXER_
     concat_arrays!(SEQ_COMMAND_V2, FX_MIXER_COMMAND_V2);
 
 //////////////////////////////////////////
-/// MARK: V3 commands
+// MARK: V3 commands
 //////////////////////////////////////////
 const SEQ_COMMAND_V3 : [&'static str; 27] =
     [
@@ -185,7 +185,7 @@ const COMMANDS_V3 : [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_
     concat_arrays!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V3);
 
 //////////////////////////////////////////
-/// MARK: V4 commands
+// MARK: V4 commands
 //////////////////////////////////////////
 const FX_MIXER_COMMAND_V4 : [&'static str; 44] =
     [

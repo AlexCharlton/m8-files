@@ -1,25 +1,31 @@
 use crate::reader::*;
 use crate::version::*;
 use crate::writer::Writer;
-use common::SynthParams;
-use external_inst::ExternalInst;
-use fmsynth::FMSynth;
-use hypersynth::HyperSynth;
-use macrosynth::MacroSynth;
-use midi::MIDIOut;
-use modulator::Mod;
-use sampler::Sampler;
-use wavsynth::WavSynth;
 
-pub mod common;
-pub mod modulator;
-pub mod external_inst;
-pub mod midi;
-pub mod macrosynth;
-pub mod fmsynth;
-pub mod hypersynth;
-pub mod sampler;
-pub mod wavsynth;
+mod common;
+mod modulator;
+mod external_inst;
+mod midi;
+mod macrosynth;
+mod fmsynth;
+mod hypersynth;
+mod sampler;
+mod wavsynth;
+
+pub use common::{
+    TranspEq,
+    LimitType,
+    SynthParams
+};
+
+pub use external_inst::*;
+pub use fmsynth::*;
+pub use hypersynth::*;
+pub use macrosynth::*;
+pub use midi::*;
+pub use modulator::*;
+pub use sampler::*;
+pub use wavsynth::*;
 
 #[derive(PartialEq, Debug, Clone, Default)]
 pub enum Instrument {
@@ -35,7 +41,9 @@ pub enum Instrument {
 }
 
 
-pub mod params {
+/// Various constants for common parameters, to avoid nasty typos everywhere
+#[allow(unused)]
+mod params {
     pub const NAME : &'static str = "NAME";
     pub const TRANSPOSE : &'static str = "TRANSPOSE";
     pub const TBLTIC : &'static str = "TBL. TIC";
@@ -62,7 +70,8 @@ pub mod params {
     pub const SOURCE : &'static str = "SRC";
 }
 
-pub mod dests {
+/// Various constants for modulation destinations, to avoid nasty typos everywhere
+mod dests {
     pub const OFF : &'static str = "OFF";
     pub const VOLUME : &'static str = "VOLUME";
     pub const PITCH : &'static str = "PITCH";
@@ -76,7 +85,9 @@ pub mod dests {
     pub const MOD_BOTH : &'static str = "MOD BOTH";
     pub const MOD_BINV : &'static str = "MOD BINV";
 }
-/// For every instrument, retrieve the command names
+
+/// This structure will aggregate for every instrument and its
+/// modulator the name of the commands associated to it.
 #[derive(Clone, Copy)]
 pub struct CommandPack {
     /// Instruments command
@@ -94,12 +105,19 @@ impl Default for CommandPack {
 }
 
 impl CommandPack {
-    pub const BASE_INSTRUMENT_COMMAND_COUNT : usize = 18;
+    /// Instrument specific command start at 0x80
     pub const INSTRUMENT_COMMAND_OFFSET : usize = 0x80;
+
+    /// If we are below INSTRUMENT_COMMAND_OFFSET + this number, we will access to
+    /// CommandPack::instr array, for instrument specific command.
+    pub const BASE_INSTRUMENT_COMMAND_COUNT : usize = 18;
+
+    /// Last base instrument command index.
     pub const BASE_INSTRUMENT_COMMAND_END : usize =
         CommandPack::INSTRUMENT_COMMAND_OFFSET +
             Mod::COMMAND_PER_MOD * SynthParams::MODULATOR_COUNT;
 
+    /// Does this command pack can render properly a given command.
     pub fn accepts(self, cmd: u8) -> bool {
         let cmd = cmd as usize;
         CommandPack::INSTRUMENT_COMMAND_OFFSET <= cmd &&
@@ -137,11 +155,10 @@ impl CommandPack {
     }
 }
 
-pub const INSTRUMENT_MEMORY_SIZE : usize = 215;
-// const MOD_OFFSET : usize = 0x3B;
 
 impl Instrument {
-    pub const V4_SIZE : usize = INSTRUMENT_MEMORY_SIZE;
+    pub const INSTRUMENT_MEMORY_SIZE : usize = 215;
+    pub const V4_SIZE : usize = Self::INSTRUMENT_MEMORY_SIZE;
 
     pub fn is_empty(&self) -> bool {
         match self {
@@ -245,7 +262,7 @@ impl Instrument {
         let len = buf.len();
         let mut reader = Reader::new(buf);
 
-        if len < INSTRUMENT_MEMORY_SIZE + Version::SIZE {
+        if len < Instrument::INSTRUMENT_MEMORY_SIZE + Version::SIZE {
             return Err(ParseError(
                 "File is not long enough to be a M8 Instrument".to_string(),
             ));
@@ -271,7 +288,7 @@ impl Instrument {
             _ => return Err(ParseError(format!("Instrument type {} not supported", kind))),
         };
 
-        reader.set_pos(start_pos + INSTRUMENT_MEMORY_SIZE);
+        reader.set_pos(start_pos + Instrument::INSTRUMENT_MEMORY_SIZE);
 
         Ok(instr)
     }

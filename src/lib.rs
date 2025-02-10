@@ -15,12 +15,12 @@
 //! dbg!(song);
 //! ```
 //!
-pub mod song;
+mod songs;
 mod eq;
 mod fx;
 mod instruments;
-mod reader;
-mod writer;
+pub mod reader;
+pub mod writer;
 mod scale;
 mod settings;
 mod theme;
@@ -32,5 +32,5 @@ pub use instruments::*;
 pub use scale::*;
 pub use settings::*;
 pub use theme::*;
-pub use song::*;
+pub use songs::*;
 pub use version::*;

@@ -1,6 +1,8 @@
+use std::fmt::{self};
+
 use crate::reader::*;
-use crate::instruments::modulator::ahd_env::AHDEnv;
-use crate::instruments::modulator::lfo::LFO;
+use crate::instruments::modulator::AHDEnv;
+use crate::instruments::modulator::LFO;
 use crate::writer::Writer;
 
 use arr_macro::arr;
@@ -47,8 +49,14 @@ const LIMIT_TYPE : [&str; 8] =
        "POST:W2"
     ];
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct LimitType(u8);
+
+impl fmt::Debug for LimitType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(LIMIT_TYPE[self.0 as usize])
+    }
+}
 
 impl TryFrom<u8> for LimitType{
     type Error = ParseError;

@@ -1,19 +1,20 @@
 use crate::{reader::*, writer::Writer};
-use adsr_env::ADSREnv;
-use ahd_env::AHDEnv;
-use drum_env::DrumEnv;
-use lfo::LFO;
-use tracking_env::TrackingEnv;
-use trig_env::TrigEnv;
 
 use super::Version;
 
-pub mod ahd_env;
-pub mod lfo;
-pub mod adsr_env;
-pub mod drum_env;
-pub mod trig_env;
-pub mod tracking_env;
+mod ahd_env;
+mod lfo;
+mod adsr_env;
+mod drum_env;
+mod trig_env;
+mod tracking_env;
+
+pub use lfo::*;
+pub use adsr_env::*;
+pub use ahd_env::*;
+pub use drum_env::*;
+pub use tracking_env::*;
+pub use trig_env::*;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Mod {
@@ -29,7 +30,7 @@ impl Mod {
     /// Size in bytes of the modulator
     const SIZE: usize = 6;
 
-    /// Number of commands associated to each mode
+    /// Number of commands associated to each modulator
     pub const COMMAND_PER_MOD : usize = 5;
 
     pub fn command_name(&self, ver: Version, mod_id: usize) -> &'static[&'static str] {

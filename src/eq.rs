@@ -206,7 +206,3 @@ impl Equ {
         Self { low, mid, high }
     }
 }
-
-pub const CHORUS_EQ_IDX : usize = 33;
-pub const DELAY_EQ_IDX : usize = 34;
-pub const REVERB_EQ_IDX : usize = 35;

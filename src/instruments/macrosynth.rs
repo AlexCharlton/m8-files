@@ -8,6 +8,7 @@ use num_enum::TryFromPrimitive;
 use super::dests;
 use super::CommandPack;
 
+/// Macro synth oscilator modes.
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(IntoPrimitive, TryFromPrimitive)]
@@ -134,6 +135,10 @@ impl MacroSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    pub fn human_readable_filter(&self) -> &'static str {
+        COMMON_FILTER_TYPES[self.synth_params.filter_type as usize]
     }
 
     pub fn write(&self, w: &mut Writer) {

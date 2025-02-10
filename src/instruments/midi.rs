@@ -71,7 +71,7 @@ const DESTINATIONS : [&'static str; 15] =
         dests::MOD_BINV,
     ];
 
-pub const PORTS : [&'static str; 4] =
+const PORTS : [&'static str; 4] =
     [
         "MIDI + USB",
         "MIDI",
@@ -104,6 +104,10 @@ impl MIDIOut {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    pub fn human_readable_port(&self) -> &'static str {
+        PORTS[self.port as usize]
     }
 
     pub fn write(&self, w: &mut Writer) {

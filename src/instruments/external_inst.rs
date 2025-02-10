@@ -73,7 +73,7 @@ const DESTINATIONS : [&'static str; 14] =
     ];
 
 /// Ports name of the external instrument
-pub const PORT : [&'static str; 4] =
+const PORT : [&'static str; 4] =
     [
         "NONE",
         "MIDI+USB",
@@ -90,6 +90,11 @@ impl ExternalInst {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    /// Return human readable name of the port.
+    pub fn human_readable_port(&self) -> &'static str {
+        PORT[self.port as usize]
     }
 
     pub fn write(&self, w: &mut Writer) {

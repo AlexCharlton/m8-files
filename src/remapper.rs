@@ -1,7 +1,9 @@
+/// Module helping in high level copy/move operations across different
+/// songs.
 use arr_macro::arr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{song::Song, Instrument};
+use crate::{songs::Song, Instrument};
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]

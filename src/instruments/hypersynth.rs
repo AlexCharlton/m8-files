@@ -2,6 +2,7 @@ use crate::reader::*;
 use crate::writer::Writer;
 use super::common::SynthParams;
 use super::common::TranspEq;
+use super::common::COMMON_FILTER_TYPES;
 use super::dests;
 use super::CommandPack;
 use super::Version;
@@ -82,6 +83,10 @@ impl HyperSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    pub fn human_readable_filter(&self) -> &'static str {
+        COMMON_FILTER_TYPES[self.synth_params.filter_type as usize]
     }
 
     pub fn write(&self, w: &mut Writer) {

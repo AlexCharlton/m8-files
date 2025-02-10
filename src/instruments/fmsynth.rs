@@ -160,6 +160,10 @@ impl FMSynth {
         &DESTINATIONS
     }
 
+    pub fn human_readable_filter(&self) -> &'static str {
+        COMMON_FILTER_TYPES[self.synth_params.filter_type as usize]
+    }
+
     pub fn write(&self, w: &mut Writer) {
         w.write_string(&self.name, 12);
         w.write(self.transp_eq.into());

@@ -8,6 +8,7 @@ use num_enum::TryFromPrimitive;
 use super::dests;
 use super::CommandPack;
 
+/// Wavsynth wave shape
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(IntoPrimitive, TryFromPrimitive)]
@@ -144,7 +145,7 @@ const DESTINATIONS : [&'static str; 15] =
         dests::MOD_BINV,
     ];
 
-pub const WAVSYNTH_FILTER_TYPES : [&'static str; 12] =
+const WAVSYNTH_FILTER_TYPES : [&'static str; 12] =
     [
         "OFF",
         "LOWPASS",
@@ -169,6 +170,10 @@ impl WavSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    pub fn human_readable_filter(&self) -> &'static str {
+        WAVSYNTH_FILTER_TYPES [self.synth_params.filter_type as usize]
     }
 
     pub fn write(&self, w: &mut Writer) {

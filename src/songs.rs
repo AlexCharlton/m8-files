@@ -1,15 +1,14 @@
 use std::fmt;
 
 use crate::eq::Equ;
-pub use crate::fx::*;
-pub use crate::instruments::*;
+use crate::fx::*;
+use crate::instruments::*;
 use crate::reader::*;
 use crate::remapper::InstrumentMapping;
 use crate::remapper::PhraseMapping;
-pub use crate::scale::*;
-pub use crate::settings::*;
-pub use crate::theme::*;
-pub use crate::version::*;
+use crate::scale::*;
+use crate::settings::*;
+use crate::version::*;
 use crate::writer::Writer;
 
 use arr_macro::arr;
@@ -28,7 +27,7 @@ pub struct Offsets {
     pub eq: usize
 }
 
-pub const V4_OFFSETS : Offsets = Offsets {
+const V4_OFFSETS : Offsets = Offsets {
     groove: 0xEE,
     song: 0x2EE,
     phrases: 0xAEE,
@@ -42,7 +41,7 @@ pub const V4_OFFSETS : Offsets = Offsets {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Song
+// MARK: Song
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone)]
 pub struct Song {
@@ -183,7 +182,7 @@ impl Song {
         for instr in &self.instruments {
             let pos = w.pos();
             instr.write(w);
-            w.seek(pos + INSTRUMENT_MEMORY_SIZE);
+            w.seek(pos + Instrument::INSTRUMENT_MEMORY_SIZE);
         }
 
         w.seek(ofs.eq);
@@ -277,7 +276,7 @@ impl Song {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: SongSteps
+// MARK: SongSteps
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone)]
 pub struct SongSteps {
@@ -330,7 +329,7 @@ impl fmt::Debug for SongSteps {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Chains
+// MARK: Chains
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone, Default)]
 pub struct Chain {
@@ -441,7 +440,7 @@ impl ChainStep {
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Phrase
+// MARK: Phrase
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone, Default)]
 pub struct Phrase {
@@ -620,7 +619,7 @@ impl Step {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Note
+// MARK: Note
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Note(pub u8);
@@ -666,7 +665,7 @@ impl fmt::Display for Note {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Table
+// MARK: Table
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone)]
 pub struct Table {
@@ -804,7 +803,7 @@ impl TableStep {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Groove
+// MARK: Groove
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone)]
 pub struct Groove {
@@ -841,13 +840,12 @@ impl fmt::Debug for Groove {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-/// MARK: Tests
+// MARK: Tests
 ////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    use modulator::Mod;
-
-    use crate::song::*;
+    use crate::*;
+    use instruments::Mod;
     use std::fs::File;
 
     fn test_file() -> Song {
