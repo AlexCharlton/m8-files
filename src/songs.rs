@@ -159,7 +159,16 @@ impl Song {
         Self::from_reader(&mut reader, version)
     }
 
-    pub fn write_patterns(&self, ofs : Offsets, w : &mut Writer) {
+    pub fn write(&self, w: &mut Writer) -> Result<(), String> {
+        if !self.version.at_least(4, 0) {
+            Err(String::from("Only version 4.0 or above song can be rewritten"))
+        } else {
+            self.write_patterns(V4_OFFSETS, w);
+            Ok(())
+        }
+    }
+
+    fn write_patterns(&self, ofs : Offsets, w : &mut Writer) {
         w.seek(ofs.song);
         w.write_bytes(&self.song.steps);
 

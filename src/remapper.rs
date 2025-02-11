@@ -504,6 +504,8 @@ impl Remapper {
         Ok((eq_mapping, instrument_mapping))
     }
 
+  /// Create a mapping to move chain and all required elements from a song
+  /// to another.
   pub fn create<'a, IT>(from_song: &Song, to_song: &Song, chains: IT) -> Result<Remapper, String>
     where
       IT: Iterator<Item=&'a u8> {
