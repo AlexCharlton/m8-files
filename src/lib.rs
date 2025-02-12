@@ -20,20 +20,22 @@
 //! 
 //! ```
 //! use m8_files::*;
-//!
-//! let mut song_data = std::fs::read("./examples/songs/TEST-FILE.m8s").unwrap();
-//! let song_reader = Reader::new(song_data.clone());
-//! let mutsong = Song::read_from_reader(&mut f).unwrap();
+//! use m8_files::remapper::Remapper;
+//! let mut song_data = std::fs::read("./examples/songs/V4EMPTY.m8s").unwrap();
+//! let mut song_reader = reader::Reader::new(song_data.clone());
+//! let mut song = Song::read_from_reader(&mut song_reader).unwrap();
 //! 
 //! // let's renumber an instrument
-//! let mut remapper = remapper::default();
-//! remapper.instrument_mapping.mapping[instrument] = to_instrument as u8;
+//! let mut remapper = Remapper::default();
+//! let instrument : usize = 4;
+//! let to_instrument = 10;
+//! remapper.instrument_mapping.mapping[instrument] = to_instrument;
 //! remapper.instrument_mapping.to_move.push(instrument as u8);
-//! remapper.renumber(&mut song.song);
+//! remapper.renumber(&mut song);
 //! 
-//! dbg!(song);
+//! dbg!(&song);
 //! 
-//! let mut output_writer = Writer::new(song_data);
+//! let mut output_writer = writer::Writer::new(song_data);
 //! 
 //! song.write(&mut output_writer).unwrap();
 //! // ready to be written elsewhere
@@ -45,11 +47,16 @@
 //! a chain from a song to another
 //! 
 //! ```
-//! let from_song = Song::read(/*... */).unwrap();
-//! let to_song = Song::read(/*... */).unwrap();
+//! use m8_files::*;
+//! use m8_files::remapper::Remapper;
+//! 
+//! let mut from_file = std::fs::File::open("./examples/songs/TEST-FILE.m8s").unwrap();
+//! let from_song = Song::read(&mut from_file).unwrap();
+//! let mut empty_file = std::fs::File::open("./examples/songs/V4EMPTY.m8s").unwrap();
+//! let mut to_song = Song::read(&mut empty_file).unwrap();
 //! let chain : u8 = 12;
 //! let mapping =
-//!     Remapper::create(&from_song, &to_song, iter::once(&chain)).unwrap();
+//!     Remapper::create(&from_song, &to_song, vec![chain].iter()).unwrap();
 //! // you can inspec the mapping here if needed.
 //! // and apply the remapping
 //! mapping.apply(&from_song, &mut to_song);
