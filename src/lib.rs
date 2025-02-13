@@ -26,7 +26,7 @@
 //! let mut song = Song::read_from_reader(&mut song_reader).unwrap();
 //! 
 //! // let's renumber an instrument
-//! let mut remapper = Remapper::default();
+//! let mut remapper = Remapper::default_ver(song.version);
 //! let instrument : usize = 4;
 //! let to_instrument = 10;
 //! remapper.instrument_mapping.mapping[instrument] = to_instrument;
@@ -37,7 +37,7 @@
 //! 
 //! let mut output_writer = writer::Writer::new(song_data);
 //! 
-//! song.write(&mut output_writer).unwrap();
+//! song.write(&mut output_writer);
 //! // ready to be written elsewhere
 //! let output_song_data = output_writer.finish();
 //! ```

@@ -24,10 +24,19 @@ pub struct Offsets {
     pub effect_settings : usize,
     pub midi_mapping: usize,
     pub scale: usize,
-    pub eq: usize
+    pub eq: usize,
+
+    pub instrument_eq_count: usize
 }
 
-const V4_OFFSETS : Offsets = Offsets {
+impl Offsets {
+    pub fn eq_count(&self) -> usize {
+        // general EQ + 3 for effects + 1 global
+        self.instrument_eq_count + 3 + 1
+    }
+}
+
+pub const V4_OFFSETS : Offsets = Offsets {
     groove: 0xEE,
     song: 0x2EE,
     phrases: 0xAEE,
@@ -37,11 +46,27 @@ const V4_OFFSETS : Offsets = Offsets {
     effect_settings: 0x1A5C1,
     midi_mapping: 0x1A5FE,
     scale: 0x1AA7E,
-    eq: 0x1AD5A + 4
+    eq: 0x1AD5A + 4,
+    instrument_eq_count: 32
 };
 
+pub const V4_1_OFFSETS : Offsets = Offsets {
+    groove: 0xEE,
+    song: 0x2EE,
+    phrases: 0xAEE,
+    chains: 0x9A5E,
+    table: 0xBA3E,
+    instruments: 0x13A3E,
+    effect_settings: 0x1A5C1,
+    midi_mapping: 0x1A5FE,
+    scale: 0x1AA7E,
+    eq: 0x1AD5A + 4,
+    instrument_eq_count: 0x80
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////////
-// MARK: Song
+/// MARK: Song
 ////////////////////////////////////////////////////////////////////////////////////
 #[derive(PartialEq, Clone)]
 pub struct Song {
@@ -106,9 +131,6 @@ impl Song {
     pub const N_GROOVES: usize = 32;
     pub const N_SCALES: usize = 16;
 
-    /// 32 general EQ + 3 for effects + 1 global
-    pub const N_INSTRUMENT_EQS: usize = 32;
-    pub const N_EQS: usize = Song::N_INSTRUMENT_EQS + 4;
     pub const N_MIDI_MAPPINGS: usize = 128;
 
     pub fn phrase_view(&self, ix: usize) -> PhraseView {
@@ -116,6 +138,18 @@ impl Song {
             phrase: &self.phrases[ix],
             instruments: &self.instruments
         }
+    }
+
+    pub fn offsets(&self) -> &'static Offsets {
+        if self.version.at_least(4, 1) {
+            &V4_1_OFFSETS
+        } else {
+            &V4_OFFSETS
+        }
+    }
+
+    pub fn eq_count(&self) -> usize {
+        self.offsets().eq_count()
     }
 
     pub fn table_view(&self, ix: usize) -> TableView {
@@ -190,7 +224,7 @@ impl Song {
         w.seek(ofs.instruments);
         for instr in &self.instruments {
             let pos = w.pos();
-            instr.write(w);
+            instr.write(self.version, w);
             w.seek(pos + Instrument::INSTRUMENT_MEMORY_SIZE);
         }
 
@@ -252,8 +286,14 @@ impl Song {
         };
 
         let eqs = if version.at_least(4, 0) {
-            reader.set_pos(V4_OFFSETS.eq);
-            (0..Self::N_INSTRUMENT_EQS)
+            let ofs = if version.at_least(4, 1) {
+                &V4_1_OFFSETS
+            } else {
+                &V4_OFFSETS
+            };
+
+            reader.set_pos(ofs.eq);
+            (0..ofs.instrument_eq_count)
                 .map(|_i| Equ::from_reader(reader))
                 .collect::<Vec<Equ>>()
         } else {
@@ -853,8 +893,7 @@ impl fmt::Debug for Groove {
 ////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    use crate::*;
-    use instruments::Mod;
+    use crate::songs::*;
     use std::fs::File;
 
     fn test_file() -> Song {
@@ -873,7 +912,7 @@ mod tests {
         assert!(
             match &test_file.instruments[1] {
                 Instrument::WavSynth(s) => {
-                    assert_eq!(s.transp_eq.transpose, true);
+                    assert_eq!(s.transpose, true);
                     assert_eq!(s.size, 0x20);
                     assert_eq!(s.synth_params.mixer_reverb, 0xD0);
                     assert!(match s.synth_params.mods[0] {
@@ -901,7 +940,7 @@ mod tests {
         );
         assert!(match &test_file.instruments[2] {
             Instrument::MacroSynth(s) => {
-                assert_eq!(s.transp_eq.transpose, false);
+                assert_eq!(s.transpose, false);
                 assert!(match s.synth_params.mods[0] {
                     Mod::TrigEnv(_) => true,
                     _ => false,

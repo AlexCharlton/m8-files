@@ -115,7 +115,7 @@ const DESTINATIONS : [&'static str; 15] =
 pub struct MacroSynth {
     pub number: u8,
     pub name: String,               // 12
-    pub transp_eq: TranspEq,        // 1
+    pub transpose: bool,            // 1
     pub table_tick: u8,             // 1
     pub synth_params: SynthParams,  // 10
 
@@ -141,9 +141,9 @@ impl MacroSynth {
         COMMON_FILTER_TYPES[self.synth_params.filter_type as usize]
     }
 
-    pub fn write(&self, w: &mut Writer) {
+    pub fn write(&self, ver: Version, w: &mut Writer) {
         w.write_string(&self.name, 12);
-        w.write(self.transp_eq.into());
+        w.write(TranspEq::from(ver, self.transpose, self.synth_params.associated_eq).into());
         w.write(self.table_tick);
         w.write(self.synth_params.volume);
         w.write(self.synth_params.pitch);
@@ -155,14 +155,14 @@ impl MacroSynth {
         w.write(self.degrade);
         w.write(self.redux);
 
-        self.synth_params.write(w, MacroSynth::MOD_OFFSET);
+        self.synth_params.write(ver, w, MacroSynth::MOD_OFFSET);
     }
 
-    pub fn from_reader(reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(ver: Version, reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
         let ms_pos = reader.pos();
         let name = reader.read_string(12);
 
-        let transp_eq = reader.read().into();
+        let transp_eq = TranspEq::from_version(ver, reader.read());
         let table_tick = reader.read();
         let volume = reader.read();
         let pitch = reader.read();
@@ -177,7 +177,7 @@ impl MacroSynth {
 
         let synth_params = 
             if version.at_least(3, 0) {
-                SynthParams::from_reader3(reader, volume, pitch, fine_tune, MacroSynth::MOD_OFFSET)?
+                SynthParams::from_reader3(ver, reader,  volume, pitch, fine_tune, transp_eq.eq, MacroSynth::MOD_OFFSET)?
             } else {
                 SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
             };
@@ -186,7 +186,7 @@ impl MacroSynth {
         Ok(MacroSynth {
             number,
             name,
-            transp_eq,
+            transpose: transp_eq.transpose,
             table_tick,
             synth_params,
 

@@ -184,7 +184,9 @@ impl Equ {
     pub const V4_SIZE : usize = 3 * EqBand::V4_SIZE;
 
     pub fn is_empty(&self) -> bool {
-        self.low.is_empty() && self.mid.is_empty() && self.high.is_empty()
+        self.low == EqBand::default_low() &&
+        self.mid == EqBand::default_mid() &&
+        self.high == EqBand::default_high()
     }
 
     pub fn clear(&mut self) {

@@ -1,13 +1,11 @@
-use std::fmt::{self};
+use std::fmt;
 
-use crate::reader::*;
-use crate::instruments::modulator::AHDEnv;
-use crate::instruments::modulator::LFO;
 use crate::writer::Writer;
-
+use crate::reader::*;
+use crate::Version;
+use super::modulator::*;
 use arr_macro::arr;
 
-use super::modulator::Mod;
 
 /// Type storing transpose field and eq number
 #[derive(PartialEq, Copy, Clone, Default, Debug)]
@@ -17,23 +15,33 @@ pub struct TranspEq {
 }
 
 impl TranspEq {
-    pub fn set_eq(&mut self, eq_ix : u8) {
-        self.eq = eq_ix;
+    pub fn from(ver: Version, transpose: bool, eq: u8) -> TranspEq {
+        if ver.at_least(4, 1) {
+            Self { transpose, eq: 0x00 }
+        } else {
+            Self { transpose, eq }
+        }
+    }
+
+    pub fn from_version(ver: Version, value: u8) -> Self {
+        if ver.at_least(4, 1) {
+            Self {
+                transpose: (value & 1) != 0,
+                eq: 0x00
+            }
+        } else {
+            Self {
+                transpose: (value & 1) != 0,
+                eq: value >> 1
+            }
+        }
     }
 }
+
 impl From<TranspEq> for u8 {
     fn from(value: TranspEq) -> Self {
         (if value.transpose { 1 } else { 0 }) |
         (value.eq << 1)
-    }
-}
-
-impl From<u8> for TranspEq {
-    fn from(value: u8) -> Self {
-        Self {
-            transpose: (value & 1) != 0,
-            eq: value >> 1
-        }
     }
 }
 
@@ -100,6 +108,8 @@ pub struct SynthParams {
     pub mixer_delay: u8,
     pub mixer_reverb: u8,
 
+    pub associated_eq: u8,
+
     pub mods: [Mod; SynthParams::MODULATOR_COUNT],
 }
 
@@ -118,8 +128,10 @@ pub const COMMON_FILTER_TYPES : [&'static str; 8] =
 impl SynthParams {
     pub const MODULATOR_COUNT : usize = 4;
 
-    /// For midi instruments, which doesn't have any real
-    /// parameters beside CCs
+    pub fn set_eq(&mut self, eq: u8) {
+        self.associated_eq = eq
+    }
+
     pub fn mod_only2(_reader: &mut Reader) -> M8Result<Self>{
         Ok(Self {
             volume: 0,
@@ -139,12 +151,11 @@ impl SynthParams {
             mixer_delay: 0,
             mixer_reverb: 0,
 
+            associated_eq: 0xFF,
             mods: arr![AHDEnv::default().to_mod(); 4]
         })
     }
 
-    /// For midi instruments, which doesn't have any real
-    /// parameters beside CCs
     pub fn mod_only3(reader: &mut Reader, mod_offset: usize) -> M8Result<Self> {
         reader.set_pos(reader.pos() + mod_offset);
 
@@ -167,6 +178,7 @@ impl SynthParams {
             mixer_chorus: 0,
             mixer_delay: 0,
             mixer_reverb: 0,
+            associated_eq: 0xFF,
 
             mods
         })
@@ -191,6 +203,8 @@ impl SynthParams {
             mixer_delay: reader.read(),
             mixer_reverb: reader.read(),
 
+            associated_eq: 0xFF,
+
             mods: [
                 AHDEnv::from_reader2(reader)?.to_mod(),
                 AHDEnv::from_reader2(reader)?.to_mod(),
@@ -200,7 +214,7 @@ impl SynthParams {
         })
     }
 
-    pub fn write(&self, w: &mut Writer, mod_offset: usize) {
+    pub fn write(&self, ver: Version, w: &mut Writer, mod_offset: usize) {
         w.write(self.filter_type);
         w.write(self.filter_cutoff);
         w.write(self.filter_res);
@@ -214,7 +228,14 @@ impl SynthParams {
         w.write(self.mixer_delay);
         w.write(self.mixer_reverb);
 
-        self.write_modes(w, mod_offset);
+        let writer_pos= w.pos();
+        if ver.at_least(4, 1) {
+            w.seek(writer_pos + mod_offset - 1);
+            w.write(self.associated_eq);
+        }
+
+        w.seek(writer_pos + mod_offset);
+        for m in &self.mods { m.write(w); }
     }
 
     pub fn write_modes(&self, w: &mut Writer, mod_offset: usize) {
@@ -223,10 +244,12 @@ impl SynthParams {
     }
 
     pub fn from_reader3(
+        version: Version,
         reader: &mut Reader,
         volume: u8,
         pitch: u8,
         fine_tune: u8,
+        eq: u8,
         mod_offset: usize,
     ) -> M8Result<Self> {
         let filter_type = reader.read();
@@ -242,7 +265,18 @@ impl SynthParams {
         let mixer_delay = reader.read();
         let mixer_reverb = reader.read();
 
-        reader.set_pos(reader.pos() + mod_offset);
+        let reader_pos = reader.pos();
+        let associated_eq =
+            if version.at_least(4, 1) {
+                reader.set_pos(reader_pos + mod_offset - 1);
+                reader.read()
+            } else if version.at_least(4, 0) {
+                eq
+            } else {
+                0xFF
+            };
+
+        reader.set_pos(reader_pos + mod_offset);
 
         let mods = arr![Mod::from_reader(reader)?; 4];
 
@@ -263,6 +297,8 @@ impl SynthParams {
             mixer_chorus,
             mixer_delay,
             mixer_reverb,
+
+            associated_eq,
 
             mods,
         })

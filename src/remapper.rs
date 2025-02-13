@@ -1,9 +1,7 @@
-/// Module helping in high level copy/move operations across different
-/// songs.
 use arr_macro::arr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{songs::Song, Instrument};
+use crate::{songs::{Song, V4_1_OFFSETS, V4_OFFSETS}, Instrument, Version};
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
@@ -34,7 +32,7 @@ fn make_mapping<const C : usize>(offset: u8) -> [u8; C] {
 pub struct EqMapping {
     /// Mapping from the "from" song eq index to the "to" song
     /// eq index
-    pub mapping: [u8; Song::N_INSTRUMENT_EQS],
+    pub mapping: Vec<u8>,
 
     /// Eqs to be moved during the remapping
     /// index in the "from" song
@@ -42,6 +40,20 @@ pub struct EqMapping {
 }
 
 impl EqMapping {
+    pub fn default_ver(ver : Version) -> EqMapping {
+        if ver.at_least(4, 1) {
+            EqMapping {
+                mapping: vec![0; V4_1_OFFSETS.instrument_eq_count],
+                to_move: vec![]
+            }
+        } else {
+            EqMapping {
+                mapping: vec![0; V4_OFFSETS.instrument_eq_count],
+                to_move: vec![]
+            }
+        }
+    }
+
     pub fn describe<T : RemapperDescriptorBuilder>(&self, builder: &mut T) {
         for ix in &self.to_move {
             let ixu = *ix as usize;
@@ -58,12 +70,6 @@ impl EqMapping {
         }
 
         acc
-    }
-}
-
-impl Default for EqMapping {
-    fn default() -> Self {
-        Self { mapping: make_mapping(0), to_move: vec![] }
     }
 }
 
@@ -209,9 +215,9 @@ pub struct Remapper {
 }
 
 /// Iter on all instruments to find allocated Eqs
-fn find_referenced_eq(song: &Song) -> [bool; Song::N_INSTRUMENT_EQS] {
+fn find_referenced_eq(song: &Song) -> Vec<bool> {
     // flags on eqs in "to"
-    let mut allocated_eqs = arr![false; 32];
+    let mut allocated_eqs = vec![false; song.eqs.len()];
 
     for instr in &song.instruments {
         match instr.equ() {
@@ -295,19 +301,17 @@ fn try_allocate(allocation_state: &[bool], previous_id: u8) -> Option<usize> {
     }
 }
 
-impl Default for Remapper {
-    fn default() -> Self {
+impl Remapper {
+    pub fn default_ver(ver : Version) -> Self {
         Self {
-            eq_mapping: Default::default(),
+            eq_mapping: EqMapping::default_ver(ver),
             instrument_mapping: Default::default(),
             table_mapping: Default::default(),
             phrase_mapping: Default::default(),
             chain_mapping: Default::default()
         }
     }
-}
 
-impl Remapper {
     pub fn describe<T : RemapperDescriptorBuilder>(&self, builder: &mut T) {
         self.eq_mapping.describe(builder);
         self.instrument_mapping.describe(builder);
@@ -425,13 +429,13 @@ impl Remapper {
         // flags on instruments in "from"
         let mut instrument_flags : [bool; Song::N_INSTRUMENTS] = arr![false; 128];
         // flags on eqsin "from"
-        let mut eq_flags : [bool; Song::N_INSTRUMENT_EQS] = arr![false; 32];
+        let mut eq_flags = vec![false; from_song.eqs.len()];
         // flags on eqs in "to"
         let mut allocated_eqs = find_referenced_eq(to_song);
         let mut allocated_instruments = find_allocated_instruments(to_song);
         let mut instrument_mapping = InstrumentMapping::default();
         // eqs from "from" to "to"
-        let mut eq_mapping = EqMapping::default();
+        let mut eq_mapping = EqMapping::default_ver(to_song.version);
 
         for chain_id in from_chains_ids {
             let from_chain = &from_song.chains[*chain_id as usize];
@@ -456,12 +460,12 @@ impl Remapper {
                     if let Some(equ) = instr.equ() {
                         let equ = equ as usize;
         
-                        if equ < Song::N_INSTRUMENT_EQS && !eq_flags[equ] {
+                        if equ < eq_flags.len() && !eq_flags[equ] {
                             eq_flags[equ as usize] = true;
                             let from_eq = &from_song.eqs[equ];
                             // try to find an already exisint Eq with same parameters
                             match to_song.eqs.iter().position(|to_eq| to_eq == from_eq) {
-                                Some(eq_idx) if (eq_idx as usize) < Song::N_INSTRUMENT_EQS =>
+                                Some(eq_idx) if (eq_idx as usize) < eq_mapping.mapping.len()  =>
                                     eq_mapping.mapping[equ] = eq_idx as u8,
                                 Some(_) | None => {
                                     match try_allocate(&allocated_eqs, equ as u8) {
@@ -504,8 +508,6 @@ impl Remapper {
         Ok((eq_mapping, instrument_mapping))
     }
 
-  /// Create a mapping to move chain and all required elements from a song
-  /// to another.
   pub fn create<'a, IT>(from_song: &Song, to_song: &Song, chains: IT) -> Result<Remapper, String>
     where
       IT: Iterator<Item=&'a u8> {
@@ -564,12 +566,13 @@ impl Remapper {
     }
 
     // remap eq in instr
+    let eq_count = song.eq_count();
     for instr_id in 0 .. Song::N_INSTRUMENTS {
         let instr = &mut song.instruments[instr_id];
 
         if let Some(eq) = instr.equ() {
             let eq = eq as usize;
-            if eq < Song::N_INSTRUMENT_EQS {
+            if eq < eq_count {
                 instr.set_eq(self.eq_mapping.mapping[eq]);
             }
         }
@@ -617,7 +620,7 @@ impl Remapper {
 
         if let Some(eq) = instr.equ() {
             let eq = eq as usize;
-            if eq < Song::N_INSTRUMENT_EQS {
+            if eq < to.eq_count() {
                 instr.set_eq(self.eq_mapping.mapping[eq]);
             }
         }

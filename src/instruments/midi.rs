@@ -110,7 +110,7 @@ impl MIDIOut {
         PORTS[self.port as usize]
     }
 
-    pub fn write(&self, w: &mut Writer) {
+    pub fn write(&self, _ver: Version, w: &mut Writer) {
         w.write_string(&self.name, 12);
         w.write(if self.transpose { 1 } else { 0 });
         w.write(self.table_tick);
@@ -128,7 +128,7 @@ impl MIDIOut {
         self.mods.write_modes(w, MIDIOut::MOD_OFFSET)
     }
 
-    pub fn from_reader(reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(_ver: Version, reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
         let name = reader.read_string(12);
         let transpose = reader.read_bool();
         let table_tick = reader.read();

@@ -13,7 +13,6 @@ mod sampler;
 mod wavsynth;
 
 pub use common::{
-    TranspEq,
     LimitType,
     SynthParams
 };
@@ -191,15 +190,15 @@ impl Instrument {
         }
     }
 
-    pub fn write(&self, w: &mut Writer) {
+    pub fn write(&self, ver: Version, w: &mut Writer) {
         match self {
-            Instrument::WavSynth(ws)     => { w.write(0); ws.write(w); }
-            Instrument::MacroSynth(ms) => { w.write(1); ms.write(w); }
-            Instrument::Sampler(s)        => { w.write(2); s.write(w); }
-            Instrument::MIDIOut(mo)       => { w.write(3); mo.write(w); }
-            Instrument::FMSynth(fs)       => { w.write(4); fs.write(w); }
-            Instrument::HyperSynth(hs) => { w.write(5); hs.write(w); }
-            Instrument::External(ex) => { w.write(6); ex.write(w); }
+            Instrument::WavSynth(ws)     => { w.write(0); ws.write(ver, w); }
+            Instrument::MacroSynth(ms) => { w.write(1); ms.write(ver, w); }
+            Instrument::Sampler(s)        => { w.write(2); s.write(ver, w); }
+            Instrument::MIDIOut(mo)       => { w.write(3); mo.write(ver, w); }
+            Instrument::FMSynth(fs)       => { w.write(4); fs.write(ver, w); }
+            Instrument::HyperSynth(hs) => { w.write(5); hs.write(ver, w); }
+            Instrument::External(ex) => { w.write(6); ex.write(ver, w); }
             Instrument::None => w.write(0xFF),
         }
     }
@@ -232,26 +231,26 @@ impl Instrument {
 
     pub fn equ(&self) -> Option<u8> {
         match self {
-            Instrument::WavSynth(ws)     => Some(ws.transp_eq.eq),
-            Instrument::MacroSynth(ms) => Some(ms.transp_eq.eq),
-            Instrument::Sampler(s)        => Some(s.transp_eq.eq),
+            Instrument::WavSynth(ws)     => Some(ws.synth_params.associated_eq),
+            Instrument::MacroSynth(ms) => Some(ms.synth_params.associated_eq),
+            Instrument::Sampler(s)        => Some(s.synth_params.associated_eq),
             Instrument::MIDIOut(_)                  => None,
-            Instrument::FMSynth(fs)       => Some(fs.transp_eq.eq),
-            Instrument::HyperSynth(hs) => Some(hs.transp_eq.eq),
-            Instrument::External(ex) => Some(ex.transp_eq.eq),
+            Instrument::FMSynth(fs)       => Some(fs.synth_params.associated_eq),
+            Instrument::HyperSynth(hs) => Some(hs.synth_params.associated_eq),
+            Instrument::External(ex) => Some(ex.synth_params.associated_eq),
             Instrument::None => None,
         }
     }
 
     pub fn set_eq(&mut self, eq_ix: u8) {
         match self {
-            Instrument::WavSynth(ws)     => ws.transp_eq.set_eq(eq_ix),
-            Instrument::MacroSynth(ms) => ms.transp_eq.set_eq(eq_ix),
-            Instrument::Sampler(s)        => s.transp_eq.set_eq(eq_ix),
+            Instrument::WavSynth(ws)     => ws.synth_params.set_eq(eq_ix),
+            Instrument::MacroSynth(ms) => ms.synth_params.set_eq(eq_ix),
+            Instrument::Sampler(s)        => s.synth_params.set_eq(eq_ix),
             Instrument::MIDIOut(_)                      => {},
-            Instrument::FMSynth(fs)       => fs.transp_eq.set_eq(eq_ix),
-            Instrument::HyperSynth(hs) => hs.transp_eq.set_eq(eq_ix),
-            Instrument::External(ex) => ex.transp_eq.set_eq(eq_ix),
+            Instrument::FMSynth(fs)       => fs.synth_params.set_eq(eq_ix),
+            Instrument::HyperSynth(hs) => hs.synth_params.set_eq(eq_ix),
+            Instrument::External(ex) => ex.synth_params.set_eq(eq_ix),
             Instrument::None => {},
         }
     }
@@ -277,13 +276,13 @@ impl Instrument {
         let kind = reader.read();
 
         let instr = match kind {
-            0x00 => Self::WavSynth(WavSynth::from_reader(reader, number, version)?),
-            0x01 => Self::MacroSynth(MacroSynth::from_reader(reader, number, version)?),
-            0x02 => Self::Sampler(Sampler::from_reader(reader, start_pos, number, version)?),
-            0x03 => Self::MIDIOut(MIDIOut::from_reader(reader, number, version)?),
-            0x04 => Self::FMSynth(FMSynth::from_reader(reader, number, version)?),
-            0x05 if version.at_least(3, 0) => Self::HyperSynth(HyperSynth::from_reader(reader, number)?),
-            0x06 if version.at_least(3, 0) => Self::External(ExternalInst::from_reader(reader, number)?),
+            0x00 => Self::WavSynth(WavSynth::from_reader(version, reader, number, version)?),
+            0x01 => Self::MacroSynth(MacroSynth::from_reader(version, reader, number, version)?),
+            0x02 => Self::Sampler(Sampler::from_reader(version, reader, start_pos, number, version)?),
+            0x03 => Self::MIDIOut(MIDIOut::from_reader(version, reader, number, version)?),
+            0x04 => Self::FMSynth(FMSynth::from_reader(version, reader, number, version)?),
+            0x05 if version.at_least(3, 0) => Self::HyperSynth(HyperSynth::from_reader(version, reader, number)?),
+            0x06 if version.at_least(3, 0) => Self::External(ExternalInst::from_reader(version, reader, number)?),
             0xFF => Self::None,
             _ => return Err(ParseError(format!("Instrument type {} not supported", kind))),
         };
