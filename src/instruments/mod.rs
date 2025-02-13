@@ -1,6 +1,8 @@
+use crate::eq::Equ;
 use crate::reader::*;
 use crate::version::*;
 use crate::writer::Writer;
+use crate::V4_1_OFFSETS;
 
 mod common;
 mod modulator;
@@ -154,6 +156,17 @@ impl CommandPack {
     }
 }
 
+/// Firmware 4.1 introduce files with an instrument definition and an
+/// EQ. This structure represent the result of parsing such insturment
+/// with an optional EQ.
+pub struct InstrumentWithEq {
+    /// The parsed instrument
+    pub instrument : Instrument,
+
+    /// If the instrument was referencing an EQ, the effectively
+    /// parsed EQ.
+    pub eq : Option<Equ>
+}
 
 impl Instrument {
     pub const INSTRUMENT_MEMORY_SIZE : usize = 215;
@@ -255,20 +268,44 @@ impl Instrument {
         }
     }
 
-    pub fn read(reader: &mut impl std::io::Read) -> M8Result<Self> {
-        let mut buf: Vec<u8> = vec![];
-        reader.read_to_end(&mut buf).unwrap();
-        let len = buf.len();
-        let mut reader = Reader::new(buf);
-
-        if len < Instrument::INSTRUMENT_MEMORY_SIZE + Version::SIZE {
+    /// Read an in-memory instrument file along with its optional eq
+    pub fn read_from_reader(reader: &mut Reader) -> M8Result<InstrumentWithEq> {
+        let instrument_end_offset =
+            Instrument::INSTRUMENT_MEMORY_SIZE + Version::SIZE;
+        if reader.len() < instrument_end_offset {
             return Err(ParseError(
                 "File is not long enough to be a M8 Instrument".to_string(),
             ));
         }
 
-        let version = Version::from_reader(&mut reader)?;
-        Self::from_reader(&mut reader, 0, version)
+        let version = Version::from_reader(reader)?;
+        let instrument = Self::from_reader(reader, 0, version)?;
+
+        let eq =
+            match V4_1_OFFSETS.instrument_file_eq_offset {
+                None => None,
+                Some(ofs) if version.at_least(4, 0) => {
+                    if reader.len() >= ofs + Equ::V4_SIZE {
+                        reader.set_pos(ofs);
+                        Some(Equ::from_reader(reader))
+                    } else {
+                        None
+                    }
+
+                }
+                Some(_) => None
+            };
+
+        Ok(InstrumentWithEq { instrument, eq })
+    }
+
+    /// Read a M8 instrument file along with its optional Eq definition.
+    pub fn read(reader: &mut impl std::io::Read) -> M8Result<InstrumentWithEq> {
+        let mut buf: Vec<u8> = vec![];
+        reader.read_to_end(&mut buf).unwrap();
+        let mut reader = Reader::new(buf);
+
+        Self::read_from_reader(&mut reader)
     }
 
     pub fn from_reader(reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {

@@ -26,7 +26,12 @@ pub struct Offsets {
     pub scale: usize,
     pub eq: usize,
 
-    pub instrument_eq_count: usize
+    /// Number of eq for the song (different between 4.0 & 4.1)
+    pub instrument_eq_count : usize,
+
+    /// For instrument size, where is the EQ information written
+    /// (if any)
+    pub instrument_file_eq_offset : Option<usize>
 }
 
 impl Offsets {
@@ -47,7 +52,8 @@ pub const V4_OFFSETS : Offsets = Offsets {
     midi_mapping: 0x1A5FE,
     scale: 0x1AA7E,
     eq: 0x1AD5A + 4,
-    instrument_eq_count: 32
+    instrument_eq_count: 32,
+    instrument_file_eq_offset : None
 };
 
 pub const V4_1_OFFSETS : Offsets = Offsets {
@@ -61,7 +67,8 @@ pub const V4_1_OFFSETS : Offsets = Offsets {
     midi_mapping: 0x1A5FE,
     scale: 0x1AA7E,
     eq: 0x1AD5A + 4,
-    instrument_eq_count: 0x80
+    instrument_eq_count: 0x80,
+    instrument_file_eq_offset: Some(0x165)
 };
 
 
