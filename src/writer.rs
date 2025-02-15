@@ -1,7 +1,6 @@
-
 pub struct Writer {
     buffer: Vec<u8>,
-    pos: usize
+    pos: usize,
 }
 
 impl Writer {
@@ -46,12 +45,16 @@ impl Writer {
         self.pos = new_pos;
     }
 
-    pub fn pos(&self) -> usize { self.pos }
+    pub fn pos(&self) -> usize {
+        self.pos
+    }
 
-    fn fill_till(&mut self, v: u8, until : usize) {
-        if until == 0 { return }
+    fn fill_till(&mut self, v: u8, until: usize) {
+        if until == 0 {
+            return;
+        }
 
-        for _i in 0 .. until {
+        for _i in 0..until {
             self.buffer[self.pos] = v;
             self.pos += 1;
         }

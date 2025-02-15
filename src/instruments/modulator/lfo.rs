@@ -4,45 +4,42 @@ use crate::{writer::Writer, Version};
 
 use super::{M8Result, Mod, ParseError, Reader};
 
-
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum LfoShape {
-  #[default]
-  TRI,
-  SIN,
-  RAMP_DOWN,
-  RAMP_UP,
-  EXP_DN,
-  EXP_UP,
-  SQR_DN,
-  SQR_UP,
-  RANDOM,
-  DRUNK,
-  TRI_T,
-  SIN_T,
-  RAMPD_T,
-  RAMPU_T,
-  EXPD_T,
-  EXPU_T,
-  SQ_D_T,
-  SQ_U_T,
-  RAND_T,
-  DRNK_T
+    #[default]
+    TRI,
+    SIN,
+    RAMP_DOWN,
+    RAMP_UP,
+    EXP_DN,
+    EXP_UP,
+    SQR_DN,
+    SQR_UP,
+    RANDOM,
+    DRUNK,
+    TRI_T,
+    SIN_T,
+    RAMPD_T,
+    RAMPU_T,
+    EXPD_T,
+    EXPU_T,
+    SQ_D_T,
+    SQ_U_T,
+    RAND_T,
+    DRNK_T,
 }
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum LfoTriggerMode {
-  #[default]
-  FREE,
-  RETRIG,
-  HOLD,
-  ONCE
+    #[default]
+    FREE,
+    RETRIG,
+    HOLD,
+    ONCE,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -52,19 +49,18 @@ pub struct LFO {
     pub trigger_mode: LfoTriggerMode,
     pub freq: u8,
     pub amount: u8,
-    pub retrigger: u8
+    pub retrigger: u8,
 }
 
-const LFO_COMMAND_NAMES : [[&'static str; 5]; 4] =
-  [
+const LFO_COMMAND_NAMES: [[&'static str; 5]; 4] = [
     ["LA1", "LO1", "LS1", "LF1", "LT1"],
     ["LA2", "LO2", "LS2", "LF2", "LT2"],
     ["LA3", "LO3", "LS3", "LF3", "LT3"],
     ["LA4", "LO4", "LS4", "LF4", "LT4"],
-  ];
+];
 
 impl LFO {
-    pub fn command_name(_ver: Version, mod_id: usize) -> &'static[&'static str] {
+    pub fn command_name(_ver: Version, mod_id: usize) -> &'static [&'static str] {
         &LFO_COMMAND_NAMES[mod_id]
     }
 
@@ -82,7 +78,7 @@ impl LFO {
                 .map_err(|_| ParseError(format!("Invalid lfo trigger mode {}", trigger)))?,
             freq: reader.read(),
             amount: reader.read(),
-            retrigger: reader.read()
+            retrigger: reader.read(),
         };
 
         Ok(r)
@@ -113,9 +109,11 @@ impl LFO {
                 .try_into()
                 .map_err(|_| ParseError(format!("Invalid lfo trigger mode {}", trigger_mode)))?,
             freq,
-            retrigger
+            retrigger,
         })
     }
 
-    pub fn to_mod(self) -> Mod { Mod::LFO(self) }
+    pub fn to_mod(self) -> Mod {
+        Mod::LFO(self)
+    }
 }

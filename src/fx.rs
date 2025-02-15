@@ -1,12 +1,12 @@
-use array_concat::*;
 use crate::reader::*;
 use crate::version::*;
 use crate::writer::Writer;
 use crate::CommandPack;
+use array_concat::*;
 
 #[derive(Copy, Clone)]
 pub struct FxCommands {
-    pub commands: &'static[&'static str]
+    pub commands: &'static [&'static str],
 }
 
 impl FxCommands {
@@ -29,218 +29,223 @@ pub struct FX {
 
 impl Default for FX {
     fn default() -> Self {
-        Self { command: 0xFF, value: 0 }
+        Self {
+            command: 0xFF,
+            value: 0,
+        }
     }
 }
-
 
 //////////////////////////////////////////
 // MARK: V2 commands
 //////////////////////////////////////////
-const SEQ_COMMAND_V2 : [&'static str; 23] =
-    [
-        "ARP",
-        "CHA",
-        "DEL",
-        "GRV",
-        "HOP",
-        "KIL",
-        "RAN",
-        "RET",
-        "REP",
-        "NTH",
-        "PSL",
-        "PSN",
-        "PVB",
-        "PVX",
-        "SCA",
-        "SCG",
-        "SED",
-        "SNG",
-        "TBL",
-        "THO",
-        "TIC",
-        "TPO",
-        "TSP",
-    ];
 
-const FX_MIXER_COMMAND_V2 : [&'static str; 36] = 
-    [
-        "VMV",
-        "XCM",
-        "XCF",
-        "XCW",
-        "XCR",
-        "XDT",
-        "XDF",
-        "XDW",
-        "XDR",
-        "XRS",
-        "XRD",
-        "XRM",
-        "XRF",
-        "XRW",
-        "XRZ",
-        "VCH",
-        "VCD",
-        "VRE",
-        "VT1",
-        "VT2",
-        "VT3",
-        "VT4",
-        "VT5",
-        "VT6",
-        "VT7",
-        "VT8",
-        "DJF",
-        "IVO",
-        "ICH",
-        "IDE",
-        "IRE",
-        "IV2",
-        "IC2",
-        "ID2",
-        "IR2",
-        "USB",
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const SEQ_COMMAND_V2 : [&'static str; 23] = [
+    "ARP",
+    "CHA",
+    "DEL",
+    "GRV",
+    "HOP",
+    "KIL",
+    "RAN",
+    "RET",
+    "REP",
+    "NTH",
+    "PSL",
+    "PSN",
+    "PVB",
+    "PVX",
+    "SCA",
+    "SCG",
+    "SED",
+    "SNG",
+    "TBL",
+    "THO",
+    "TIC",
+    "TPO",
+    "TSP",
+];
 
-const COMMANDS_V2 : [&'static str; concat_arrays_size!(SEQ_COMMAND_V2, FX_MIXER_COMMAND_V2)] =
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const FX_MIXER_COMMAND_V2 : [&'static str; 36] = [
+    "VMV",
+    "XCM",
+    "XCF",
+    "XCW",
+    "XCR",
+    "XDT",
+    "XDF",
+    "XDW",
+    "XDR",
+    "XRS",
+    "XRD",
+    "XRM",
+    "XRF",
+    "XRW",
+    "XRZ",
+    "VCH",
+    "VCD",
+    "VRE",
+    "VT1",
+    "VT2",
+    "VT3",
+    "VT4",
+    "VT5",
+    "VT6",
+    "VT7",
+    "VT8",
+    "DJF",
+    "IVO",
+    "ICH",
+    "IDE",
+    "IRE",
+    "IV2",
+    "IC2",
+    "ID2",
+    "IR2",
+    "USB",
+];
+
+const COMMANDS_V2: [&'static str; concat_arrays_size!(SEQ_COMMAND_V2, FX_MIXER_COMMAND_V2)] =
     concat_arrays!(SEQ_COMMAND_V2, FX_MIXER_COMMAND_V2);
 
 //////////////////////////////////////////
 // MARK: V3 commands
 //////////////////////////////////////////
-const SEQ_COMMAND_V3 : [&'static str; 27] =
-    [
-        "ARP",
-        "CHA",
-        "DEL",
-        "GRV",
-        "HOP",
-        "KIL",
-        "RND",
-        "RNL",
-        "RET",
-        "REP",
-        "RMX",
-        "NTH",
-        "PSL",
-        "PBN",
-        "PVB",
-        "PVX",
-        "SCA",
-        "SCG",
-        "SED",
-        "SNG",
-        "TBL",
-        "THO",
-        "TIC",
-        "TBX",
-        "TPO",
-        "TSP",
-        "OFF",
-    ];
 
-const FX_MIXER_COMMAND_V3 : [&'static str; 36] =
-    [
-        "VMV",
-        "XCM",
-        "XCF",
-        "XCW",
-        "XCR",
-        "XDT",
-        "XDF",
-        "XDW",
-        "XDR",
-        "XRS",
-        "XRD",
-        "XRM",
-        "XRF",
-        "XRW",
-        "XRZ",
-        "VCH",
-        "VCD",
-        "VRE",
-        "VT1",
-        "VT2",
-        "VT3",
-        "VT4",
-        "VT5",
-        "VT6",
-        "VT7",
-        "VT8",
-        "DJF",
-        "IVO",
-        "ICH",
-        "IDE",
-        "IRE",
-        "IV2",
-        "IC2",
-        "ID2",
-        "IR2",
-        "USB",
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const SEQ_COMMAND_V3 : [&'static str; 27] = [
+    "ARP",
+    "CHA",
+    "DEL",
+    "GRV",
+    "HOP",
+    "KIL",
+    "RND",
+    "RNL",
+    "RET",
+    "REP",
+    "RMX",
+    "NTH",
+    "PSL",
+    "PBN",
+    "PVB",
+    "PVX",
+    "SCA",
+    "SCG",
+    "SED",
+    "SNG",
+    "TBL",
+    "THO",
+    "TIC",
+    "TBX",
+    "TPO",
+    "TSP",
+    "OFF",
+];
 
-const COMMANDS_V3 : [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V3)] =
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const FX_MIXER_COMMAND_V3 : [&'static str; 36] = [
+    "VMV",
+    "XCM",
+    "XCF",
+    "XCW",
+    "XCR",
+    "XDT",
+    "XDF",
+    "XDW",
+    "XDR",
+    "XRS",
+    "XRD",
+    "XRM",
+    "XRF",
+    "XRW",
+    "XRZ",
+    "VCH",
+    "VCD",
+    "VRE",
+    "VT1",
+    "VT2",
+    "VT3",
+    "VT4",
+    "VT5",
+    "VT6",
+    "VT7",
+    "VT8",
+    "DJF",
+    "IVO",
+    "ICH",
+    "IDE",
+    "IRE",
+    "IV2",
+    "IC2",
+    "ID2",
+    "IR2",
+    "USB",
+];
+
+const COMMANDS_V3: [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V3)] =
     concat_arrays!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V3);
 
 //////////////////////////////////////////
 // MARK: V4 commands
 //////////////////////////////////////////
-const FX_MIXER_COMMAND_V4 : [&'static str; 44] =
-    [
-        "VMV",
-        "XCM",
-        "XCF",
-        "XCW",
-        "XCR",
-        "XDT",
-        "XDF",
-        "XDW",
-        "XDR",
-        "XRS",
-        "XRD",
-        "XRM",
-        "XRF",
-        "XRW",
-        "XRZ",
-        "VCH",
-        "VDE",
-        "VRE",
-        "VT1",
-        "VT2",
-        "VT3",
-        "VT4",
-        "VT5",
-        "VT6",
-        "VT7",
-        "VT8",
-        "DJC",
-        "VIN",
-        "ICH",
-        "IDE",
-        "IRE",
-        "VI2",
-        "IC2",
-        "ID2",
-        "IR2",
-        "USB",
 
-        "DJR", // 0x3F
-        "DJT", // 0x40
-        "EQM", // 0x41
-        "EQI", // 0x42
-        "INS", // 0x43
-        "RTO", // 0x44
-        "ARC", // 0x45
-        "GGR", // 0x46
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const FX_MIXER_COMMAND_V4 : [&'static str; 44] = [
+    "VMV",
+    "XCM",
+    "XCF",
+    "XCW",
+    "XCR",
+    "XDT",
+    "XDF",
+    "XDW",
+    "XDR",
+    "XRS",
+    "XRD",
+    "XRM",
+    "XRF",
+    "XRW",
+    "XRZ",
+    "VCH",
+    "VDE",
+    "VRE",
+    "VT1",
+    "VT2",
+    "VT3",
+    "VT4",
+    "VT5",
+    "VT6",
+    "VT7",
+    "VT8",
+    "DJC",
+    "VIN",
+    "ICH",
+    "IDE",
+    "IRE",
+    "VI2",
+    "IC2",
+    "ID2",
+    "IR2",
+    "USB",
 
-const COMMANDS_V4 : [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V4)] =
+    "DJR", // 0x3F
+    "DJT", // 0x40
+    "EQM", // 0x41
+    "EQI", // 0x42
+    "INS", // 0x43
+    "RTO", // 0x44
+    "ARC", // 0x45
+    "GGR", // 0x46
+];
+
+const COMMANDS_V4: [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V4)] =
     concat_arrays!(SEQ_COMMAND_V3, FX_MIXER_COMMAND_V4);
 
 impl FX {
-    pub const V4_SIZE : usize = 2;
+    pub const V4_SIZE: usize = 2;
 
     pub(crate) fn from_reader(reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
@@ -270,11 +275,17 @@ impl FX {
     /// Retrieve command names for a given version
     pub fn fx_command_names(ver: Version) -> FxCommands {
         if ver.at_least(4, 0) {
-            FxCommands { commands: &COMMANDS_V4 }
+            FxCommands {
+                commands: &COMMANDS_V4,
+            }
         } else if ver.at_least(3, 0) {
-            FxCommands { commands: &COMMANDS_V3 }
+            FxCommands {
+                commands: &COMMANDS_V3,
+            }
         } else {
-            FxCommands { commands: &COMMANDS_V2 }
+            FxCommands {
+                commands: &COMMANDS_V2,
+            }
         }
     }
 

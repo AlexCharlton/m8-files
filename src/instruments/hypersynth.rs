@@ -1,11 +1,11 @@
-use crate::reader::*;
-use crate::writer::Writer;
 use super::common::SynthParams;
 use super::common::TranspEq;
 use super::common::COMMON_FILTER_TYPES;
 use super::dests;
 use super::CommandPack;
 use super::Version;
+use crate::reader::*;
+use crate::writer::Writer;
 
 use arr_macro::arr;
 
@@ -24,61 +24,61 @@ pub struct HyperSynth {
     pub width: u8,
     pub subosc: u8,
 
-    pub chords: [[u8; 6]; 0x10]
+    pub chords: [[u8; 6]; 0x10],
 }
 
-const HYPERSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] =
-    [
-      "VOL",
-      "PIT",
-      "FIN",
-      "CRD",
-      "SHF",
-      "SWM",
-      "WID",
-      "SUB",
-      "FLT",
-      "CUT",
-      "RES",
-      "AMP",
-      "LIM",
-      "PAN",
-      "DRY",
-      
-      "SCH",
-      "SDL",
-      "SRV",
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const HYPERSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] = [
+    "VOL",
+    "PIT",
+    "FIN",
+    "CRD",
+    "SHF",
+    "SWM",
+    "WID",
+    "SUB",
+    "FLT",
+    "CUT",
+    "RES",
+    "AMP",
+    "LIM",
+    "PAN",
+    "DRY",
+    
+    "SCH",
+    "SDL",
+    "SRV",
 
-      // EXTRA
-      "CVO",
-      "SNC"
-    ];
+    // EXTRA
+    "CVO",
+    "SNC"
+];
 
-const DESTINATIONS : [&'static str; 15] =
-    [
-        dests::OFF,
-        dests::VOLUME,
-        dests::PITCH,
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 15] = [
+    dests::OFF,
+    dests::VOLUME,
+    dests::PITCH,
 
-        "SHIFT",
-        "SWARM",
-        "WIDTH",
-        "SUBOSC",
-        dests::CUTOFF,
-        dests::RES,
-        dests::AMP,
-        dests::PAN,
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+    "SHIFT",
+    "SWARM",
+    "WIDTH",
+    "SUBOSC",
+    dests::CUTOFF,
+    dests::RES,
+    dests::AMP,
+    dests::PAN,
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
 impl HyperSynth {
-    const MOD_OFFSET : usize = 23;
+    const MOD_OFFSET: usize = 23;
 
-    pub fn command_name(&self, _ver : Version) -> &'static[&'static str] {
-        &HYPERSYNTH_COMMAND_NAMES 
+    pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
+        &HYPERSYNTH_COMMAND_NAMES
     }
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
@@ -111,7 +111,9 @@ impl HyperSynth {
 
         for chd in self.chords {
             w.write(0xFF);
-            for k in chd { w.write(k); }
+            for k in chd {
+                w.write(k);
+            }
         }
     }
 
@@ -135,11 +137,17 @@ impl HyperSynth {
         let swarm = reader.read();
         let width = reader.read();
         let subosc = reader.read();
-        let synth_params =
-            SynthParams::from_reader3(ver, reader, volume, pitch, fine_tune, transp_eq.eq, HyperSynth::MOD_OFFSET)?;
+        let synth_params = SynthParams::from_reader3(
+            ver,
+            reader,
+            volume,
+            pitch,
+            fine_tune,
+            transp_eq.eq,
+            HyperSynth::MOD_OFFSET,
+        )?;
 
-        let chords =
-            arr![HyperSynth::load_chord(reader); 0x10];
+        let chords = arr![HyperSynth::load_chord(reader); 0x10];
 
         Ok(HyperSynth {
             number,
@@ -154,7 +162,7 @@ impl HyperSynth {
             swarm,
             width,
             subosc,
-            chords
+            chords,
         })
     }
 }

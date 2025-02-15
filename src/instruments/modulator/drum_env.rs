@@ -2,15 +2,12 @@ use crate::{writer::Writer, Version};
 
 use super::{M8Result, Reader};
 
-
-const DRUMENV_COMMAND_NAMES : [[&'static str; 5]; 4] =
-  [
+const DRUMENV_COMMAND_NAMES: [[&'static str; 5]; 4] = [
     ["EA1", "PK1", "BO1", "DE1", "ET1"],
     ["EA2", "PK2", "BO2", "DE2", "ET2"],
     ["EA3", "PK3", "BO3", "DE3", "ET3"],
     ["EA4", "PK4", "BO4", "DE4", "ET4"],
-  ];
-
+];
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct DrumEnv {
@@ -22,7 +19,7 @@ pub struct DrumEnv {
 }
 
 impl DrumEnv {
-    pub fn command_names(_ver: Version, mod_id: usize) -> &'static[&'static str] {
+    pub fn command_names(_ver: Version, mod_id: usize) -> &'static [&'static str] {
         &DRUMENV_COMMAND_NAMES[mod_id]
     }
 

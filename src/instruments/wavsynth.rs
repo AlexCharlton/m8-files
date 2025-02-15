@@ -1,6 +1,6 @@
+use crate::instruments::common::*;
 use crate::reader::*;
 use crate::version::*;
-use crate::instruments::common::*;
 use crate::writer::Writer;
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -11,8 +11,7 @@ use super::CommandPack;
 /// Wavsynth wave shape
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum WavShape {
     #[default]
     PULSE12,
@@ -84,7 +83,7 @@ pub enum WavShape {
     WT_WOWEE,
     WT_ZAP,
     WT_BRAIDS,
-    WT_VOXSYNTH
+    WT_VOXSYNTH,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -102,8 +101,8 @@ pub struct WavSynth {
     pub scan: u8,
 }
 
-const WAVSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT] =
-  [
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const WAVSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT] = [
     "VOL",
     "PIT",
     "FIN",
@@ -123,46 +122,46 @@ const WAVSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMA
     "SCH",
     "SDL",
     "SRV",
-  ];
+];
 
-const DESTINATIONS : [&'static str; 15] =
-    [
-        dests::OFF,
-        dests::VOLUME,
-        dests::PITCH,
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 15] = [
+    dests::OFF,
+    dests::VOLUME,
+    dests::PITCH,
 
-        "SIZE",
-        "MULT",
-        "WARP",
-        "SCAN",
-        dests::CUTOFF,
-        dests::RES,
-        dests::AMP,
-        dests::PAN,
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+    "SIZE",
+    "MULT",
+    "WARP",
+    "SCAN",
+    dests::CUTOFF,
+    dests::RES,
+    dests::AMP,
+    dests::PAN,
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
-const WAVSYNTH_FILTER_TYPES : [&'static str; 12] =
-    [
-        "OFF",
-        "LOWPASS",
-        "HIGHPAS",
-        "BANDPAS",
-        "BANDSTP",
-        "LP > HP",
-        "ZDF LP",
-        "ZDF HP",
-        "WAV LP",
-        "WAV HP",
-        "WAV BP",
-        "WAV BS"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const WAVSYNTH_FILTER_TYPES : [&'static str; 12] = [
+    "OFF",
+    "LOWPASS",
+    "HIGHPAS",
+    "BANDPAS",
+    "BANDSTP",
+    "LP > HP",
+    "ZDF LP",
+    "ZDF HP",
+    "WAV LP",
+    "WAV HP",
+    "WAV BP",
+    "WAV BS"
+];
 
 impl WavSynth {
-    pub const MOD_OFFSET : usize = 30;
+    pub const MOD_OFFSET: usize = 30;
 
     pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
         &WAVSYNTH_COMMAND_NAMES
@@ -192,7 +191,12 @@ impl WavSynth {
         self.synth_params.write(ver, w, WavSynth::MOD_OFFSET);
     }
 
-    pub fn from_reader(ver: Version, reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(
+        ver: Version,
+        reader: &mut Reader,
+        number: u8,
+        version: Version,
+    ) -> M8Result<Self> {
         let name = reader.read_string(12);
         let transp_eq = TranspEq::from_version(ver, reader.read());
         let table_tick = reader.read();
@@ -205,12 +209,19 @@ impl WavSynth {
         let mult = reader.read();
         let warp = reader.read();
         let scan = reader.read();
-        let synth_params = 
-            if version.at_least(3, 0) {
-                SynthParams::from_reader3(ver, reader, volume, pitch, fine_tune, transp_eq.eq, WavSynth::MOD_OFFSET)?
-            } else {
-                SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
-            };
+        let synth_params = if version.at_least(3, 0) {
+            SynthParams::from_reader3(
+                ver,
+                reader,
+                volume,
+                pitch,
+                fine_tune,
+                transp_eq.eq,
+                WavSynth::MOD_OFFSET,
+            )?
+        } else {
+            SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
+        };
 
         Ok(WavSynth {
             number,

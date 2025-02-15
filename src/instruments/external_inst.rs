@@ -1,5 +1,3 @@
-use crate::reader::*;
-use crate::writer::Writer;
 use super::common::SynthParams;
 use super::common::TranspEq;
 use super::dests;
@@ -7,6 +5,8 @@ use super::midi::ControlChange;
 use super::params;
 use super::CommandPack;
 use super::Version;
+use crate::reader::*;
+use crate::writer::Writer;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ExternalInst {
@@ -27,59 +27,59 @@ pub struct ExternalInst {
     pub ccd: ControlChange,
 }
 
-const EXTERNAL_INST_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] =
-    [
-      "VOL",
-      "PIT",
-      "MPB",
-      "MPG",
-      "CCA",
-      "CCB",
-      "CCC",
-      "CCD",
-      "FLT",
-      "CUT",
-      "RES",
-      "AMP",
-      "LIM",
-      "PAN",
-      "DRY",
-      
-      "SCH",
-      "SDL",
-      "SRV",
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const EXTERNAL_INST_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] = [
+    "VOL",
+    "PIT",
+    "MPB",
+    "MPG",
+    "CCA",
+    "CCB",
+    "CCC",
+    "CCD",
+    "FLT",
+    "CUT",
+    "RES",
+    "AMP",
+    "LIM",
+    "PAN",
+    "DRY",
+    
+    "SCH",
+    "SDL",
+    "SRV",
 
-      // EXTRA
-      "ADD",
-      "CHD"
-    ];
+    // EXTRA
+    "ADD",
+    "CHD"
+];
 
-const DESTINATIONS : [&'static str; 14] =
-    [
-        dests::OFF,
-        dests::VOLUME,
-        dests::CUTOFF,
-        dests::RES,
-        dests::AMP,
-        dests::PAN,
-        params::CCA,
-        params::CCB,
-        params::CCC,
-        params::CCD,
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 14] = [
+    dests::OFF,
+    dests::VOLUME,
+    dests::CUTOFF,
+    dests::RES,
+    dests::AMP,
+    dests::PAN,
+    params::CCA,
+    params::CCB,
+    params::CCC,
+    params::CCD,
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
 /// Ports name of the external instrument
-const PORT : [&'static str; 4] =
-    [
-        "NONE",
-        "MIDI+USB",
-        "MIDI",
-        "USB"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const PORT : [&'static str; 4] = [
+    "NONE",
+    "MIDI+USB",
+    "MIDI",
+    "USB"
+];
 
 impl ExternalInst {
     const MOD_OFFSET: usize = 22;
@@ -120,10 +120,8 @@ impl ExternalInst {
     }
 
     pub fn from_reader(ver: Version, reader: &mut Reader, number: u8) -> M8Result<Self> {
-
         let name = reader.read_string(12);
-        let transp_eq =
-            TranspEq::from_version(ver, reader.read());
+        let transp_eq = TranspEq::from_version(ver, reader.read());
 
         let table_tick = reader.read();
         let volume = reader.read();
@@ -140,15 +138,15 @@ impl ExternalInst {
         let ccc = ControlChange::from_reader(reader)?;
         let ccd = ControlChange::from_reader(reader)?;
 
-        let synth_params =
-            SynthParams::from_reader3(
-                ver,
-                reader,
-                volume,
-                pitch,
-                fine_tune,
-                transp_eq.eq,
-                ExternalInst::MOD_OFFSET)?;
+        let synth_params = SynthParams::from_reader3(
+            ver,
+            reader,
+            volume,
+            pitch,
+            fine_tune,
+            transp_eq.eq,
+            ExternalInst::MOD_OFFSET,
+        )?;
 
         Ok(ExternalInst {
             number,

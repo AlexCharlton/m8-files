@@ -22,7 +22,10 @@ pub struct Reader {
 #[allow(dead_code)]
 impl Reader {
     pub fn new(buffer: Vec<u8>) -> Self {
-        Self { buffer, position: 0, }
+        Self {
+            buffer,
+            position: 0,
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -54,14 +57,16 @@ impl Reader {
         while end > 0 {
             match std::str::from_utf8(&b[0..end]) {
                 Ok(str) => return str.to_string(),
-                Err(_) => end -= 1
+                Err(_) => end -= 1,
             }
         }
-        
+
         String::from("")
     }
 
-    pub fn pos(&self) -> usize { self.position }
+    pub fn pos(&self) -> usize {
+        self.position
+    }
 
     pub fn set_pos(&mut self, n: usize) {
         self.position = n;

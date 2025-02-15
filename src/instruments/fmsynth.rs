@@ -1,6 +1,6 @@
+use crate::instruments::common::*;
 use crate::reader::*;
 use crate::version::*;
-use crate::instruments::common::*;
 use crate::writer::Writer;
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -13,21 +13,20 @@ use super::CommandPack;
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FmAlgo(u8);
 
-const FM_ALGO_STRINGS : [&str; 0x0C] =
-    [
-        "A>B>C>D",
-        "[A+B]>C>D",
-        "[A>B+C]>D",
-        "[A>B+A>C]>D",
-        "[A+B+C]>D",
-        "[A>B>C]+D",
-        "[A>B>C]+[A>B>D]",
-        "[A>B]+[C>D]",
-        "[A>B]+[A>C]+[A>D]",
-        "[A>B]+[A>C]+D",
-        "[A>B]+C+D",
-        "A+B+C+D"
-    ];
+const FM_ALGO_STRINGS: [&str; 0x0C] = [
+    "A>B>C>D",
+    "[A+B]>C>D",
+    "[A>B+C]>D",
+    "[A>B+A>C]>D",
+    "[A+B+C]>D",
+    "[A>B>C]+D",
+    "[A>B>C]+[A>B>D]",
+    "[A>B]+[C>D]",
+    "[A>B]+[A>C]+[A>D]",
+    "[A>B]+[A>C]+D",
+    "[A>B]+C+D",
+    "A+B+C+D",
+];
 
 impl TryFrom<u8> for FmAlgo {
     type Error = ParseError;
@@ -54,8 +53,7 @@ impl FmAlgo {
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum FMWave {
     #[default]
     SIN,
@@ -138,8 +136,8 @@ pub enum FMWave {
     W45,
 }
 
-const FM_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] =
-  [
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const FM_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] = [
     "VOL",
     "PIT",
     "FIN",
@@ -161,27 +159,27 @@ const FM_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT
     "SRV",
     
     "FMP",
-  ];
+];
 
-const DESTINATIONS : [&'static str; 15] =
-    [
-        dests::OFF,
-        dests::VOLUME,
-        dests::PITCH,
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 15] = [
+    dests::OFF,
+    dests::VOLUME,
+    dests::PITCH,
 
-        "MOD1",
-        "MOD2",
-        "MOD3",
-        "MOD4",
-        dests::CUTOFF,
-        dests::RES,
-        dests::AMP,
-        dests::PAN,
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+    "MOD1",
+    "MOD2",
+    "MOD3",
+    "MOD4",
+    dests::CUTOFF,
+    dests::RES,
+    dests::AMP,
+    dests::PAN,
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
 #[derive(PartialEq, Debug, Default, Clone)]
 pub struct Operator {
@@ -212,7 +210,7 @@ pub struct FMSynth {
 }
 
 impl FMSynth {
-    const MOD_OFFSET : usize = 2;
+    const MOD_OFFSET: usize = 2;
 
     pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
         &FM_FX_COMMANDS
@@ -266,10 +264,14 @@ impl FMSynth {
         self.synth_params.write(ver, w, FMSynth::MOD_OFFSET);
     }
 
-    pub fn from_reader(ver: Version, reader: &mut Reader,  number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(
+        ver: Version,
+        reader: &mut Reader,
+        number: u8,
+        version: Version,
+    ) -> M8Result<Self> {
         let name = reader.read_string(12);
-        let transp_eq =
-            TranspEq::from_version(ver, reader.read());
+        let transp_eq = TranspEq::from_version(ver, reader.read());
         let table_tick = reader.read();
         let volume = reader.read();
         let pitch = reader.read();
@@ -303,12 +305,19 @@ impl FMSynth {
         let mod3 = reader.read();
         let mod4 = reader.read();
 
-        let synth_params =
-            if version.at_least(3, 0) {
-                SynthParams::from_reader3(ver, reader, volume, pitch, fine_tune, transp_eq.eq, FMSynth::MOD_OFFSET)?
-            } else {
-                SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
-            };
+        let synth_params = if version.at_least(3, 0) {
+            SynthParams::from_reader3(
+                ver,
+                reader,
+                volume,
+                pitch,
+                fine_tune,
+                transp_eq.eq,
+                FMSynth::MOD_OFFSET,
+            )?
+        } else {
+            SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
+        };
 
         Ok(FMSynth {
             number,

@@ -36,7 +36,6 @@ impl TryFrom<&mut Reader> for MidiSettings {
             track_input_program_change: reader.read_bool(),
             track_input_mode: reader.read(),
         })
-
     }
 }
 
@@ -162,13 +161,12 @@ impl EffectsSettings {
         reader.read_bytes(3); //unused
 
         // THIS likely changed :()
-        let (delay_hp, delay_lp) =
-            if version.at_least(4, 0) {
-                (0, 0)
-            } else {
-                (reader.read(), reader.read())
-            };
-        
+        let (delay_hp, delay_lp) = if version.at_least(4, 0) {
+            (0, 0)
+        } else {
+            (reader.read(), reader.read())
+        };
+
         let delay_time_l = reader.read();
         let delay_time_r = reader.read();
         let delay_feedback = reader.read();
@@ -177,12 +175,11 @@ impl EffectsSettings {
         reader.read_bytes(1); //unused
 
         // This likely changed :()
-        let (reverb_hp, reverb_lp) =
-            if version.at_least(4, 0) {
-                (0, 0)
-            } else {
-                (reader.read(), reader.read())
-            };
+        let (reverb_hp, reverb_lp) = if version.at_least(4, 0) {
+            (0, 0)
+        } else {
+            (reader.read(), reader.read())
+        };
 
         let reverb_size = reader.read();
         let reverb_damping = reader.read();

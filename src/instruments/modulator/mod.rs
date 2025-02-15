@@ -2,17 +2,17 @@ use crate::{reader::*, writer::Writer};
 
 use super::Version;
 
-mod ahd_env;
-mod lfo;
 mod adsr_env;
+mod ahd_env;
 mod drum_env;
-mod trig_env;
+mod lfo;
 mod tracking_env;
+mod trig_env;
 
-pub use lfo::*;
 pub use adsr_env::*;
 pub use ahd_env::*;
 pub use drum_env::*;
+pub use lfo::*;
 pub use tracking_env::*;
 pub use trig_env::*;
 
@@ -31,11 +31,11 @@ impl Mod {
     const SIZE: usize = 6;
 
     /// Number of commands associated to each modulator
-    pub const COMMAND_PER_MOD : usize = 5;
+    pub const COMMAND_PER_MOD: usize = 5;
 
-    pub fn command_name(&self, ver: Version, mod_id: usize) -> &'static[&'static str] {
+    pub fn command_name(&self, ver: Version, mod_id: usize) -> &'static [&'static str] {
         match self {
-            Mod::AHDEnv(_)  => AHDEnv::command_names(ver, mod_id),
+            Mod::AHDEnv(_) => AHDEnv::command_names(ver, mod_id),
             Mod::ADSREnv(_) => ADSREnv::command_name(ver, mod_id),
             Mod::DrumEnv(_) => DrumEnv::command_names(ver, mod_id),
             Mod::LFO(_) => LFO::command_name(ver, mod_id),
@@ -58,8 +58,7 @@ impl Mod {
             3 => Mod::LFO(LFO::from_reader3(reader, dest)?),
             4 => Mod::TrigEnv(TrigEnv::from_reader(reader, dest)?),
             5 => Mod::TrackingEnv(TrackingEnv::from_reader(reader, dest)?),
-            x =>
-                return Err(ParseError(format!("Unknown mod type {}", x))),
+            x => return Err(ParseError(format!("Unknown mod type {}", x))),
         };
 
         reader.set_pos(start_pos + Self::SIZE);
@@ -70,7 +69,7 @@ impl Mod {
         let start = w.pos();
 
         match self {
-            Mod::AHDEnv(env) =>{
+            Mod::AHDEnv(env) => {
                 w.write(env.dest);
                 env.write(w);
             }

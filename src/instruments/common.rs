@@ -1,23 +1,25 @@
 use std::fmt;
 
-use crate::writer::Writer;
-use crate::reader::*;
-use crate::Version;
 use super::modulator::*;
+use crate::reader::*;
+use crate::writer::Writer;
+use crate::Version;
 use arr_macro::arr;
-
 
 /// Type storing transpose field and eq number
 #[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct TranspEq {
-    pub transpose : bool,
-    pub eq : u8
+    pub transpose: bool,
+    pub eq: u8,
 }
 
 impl TranspEq {
     pub fn from(ver: Version, transpose: bool, eq: u8) -> TranspEq {
         if ver.at_least(4, 1) {
-            Self { transpose, eq: 0x00 }
+            Self {
+                transpose,
+                eq: 0x00,
+            }
         } else {
             Self { transpose, eq }
         }
@@ -27,12 +29,12 @@ impl TranspEq {
         if ver.at_least(4, 1) {
             Self {
                 transpose: (value & 1) != 0,
-                eq: 0x00
+                eq: 0x00,
             }
         } else {
             Self {
                 transpose: (value & 1) != 0,
-                eq: value >> 1
+                eq: value >> 1,
             }
         }
     }
@@ -40,22 +42,21 @@ impl TranspEq {
 
 impl From<TranspEq> for u8 {
     fn from(value: TranspEq) -> Self {
-        (if value.transpose { 1 } else { 0 }) |
-        (value.eq << 1)
+        (if value.transpose { 1 } else { 0 }) | (value.eq << 1)
     }
 }
 
-const LIMIT_TYPE : [&str; 8] =
-    [
-       "CLIP",
-       "SIN",
-       "FOLD",
-       "WRAP",
-       "POST",
-       "POSTAD",
-       "POST:W1",
-       "POST:W2"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const LIMIT_TYPE : [&str; 8] = [
+    "CLIP",
+    "SIN",
+    "FOLD",
+    "WRAP",
+    "POST",
+    "POSTAD",
+    "POST:W1",
+    "POST:W2"
+];
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct LimitType(u8);
@@ -66,7 +67,7 @@ impl fmt::Debug for LimitType {
     }
 }
 
-impl TryFrom<u8> for LimitType{
+impl TryFrom<u8> for LimitType {
     type Error = ParseError;
 
     fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
@@ -113,26 +114,26 @@ pub struct SynthParams {
     pub mods: [Mod; SynthParams::MODULATOR_COUNT],
 }
 
-pub const COMMON_FILTER_TYPES : [&'static str; 8] =
-    [
-        "OFF",
-        "LOWPASS",
-        "HIGHPAS",
-        "BANDPAS",
-        "BANDSTP",
-        "LP > HP",
-        "ZDF LP",
-        "ZDF HP",
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+pub const COMMON_FILTER_TYPES : [&'static str; 8] = [
+    "OFF",
+    "LOWPASS",
+    "HIGHPAS",
+    "BANDPAS",
+    "BANDSTP",
+    "LP > HP",
+    "ZDF LP",
+    "ZDF HP",
+];
 
 impl SynthParams {
-    pub const MODULATOR_COUNT : usize = 4;
+    pub const MODULATOR_COUNT: usize = 4;
 
     pub fn set_eq(&mut self, eq: u8) {
         self.associated_eq = eq
     }
 
-    pub fn mod_only2(_reader: &mut Reader) -> M8Result<Self>{
+    pub fn mod_only2(_reader: &mut Reader) -> M8Result<Self> {
         Ok(Self {
             volume: 0,
             pitch: 0,
@@ -152,7 +153,7 @@ impl SynthParams {
             mixer_reverb: 0,
 
             associated_eq: 0xFF,
-            mods: arr![AHDEnv::default().to_mod(); 4]
+            mods: arr![AHDEnv::default().to_mod(); 4],
         })
     }
 
@@ -180,11 +181,16 @@ impl SynthParams {
             mixer_reverb: 0,
             associated_eq: 0xFF,
 
-            mods
+            mods,
         })
     }
 
-    pub fn from_reader2(reader: &mut Reader, volume: u8, pitch: u8, fine_tune: u8) -> M8Result<Self> {
+    pub fn from_reader2(
+        reader: &mut Reader,
+        volume: u8,
+        pitch: u8,
+        fine_tune: u8,
+    ) -> M8Result<Self> {
         Ok(Self {
             volume,
             pitch,
@@ -228,19 +234,23 @@ impl SynthParams {
         w.write(self.mixer_delay);
         w.write(self.mixer_reverb);
 
-        let writer_pos= w.pos();
+        let writer_pos = w.pos();
         if ver.at_least(4, 1) {
             w.seek(writer_pos + mod_offset - 1);
             w.write(self.associated_eq);
         }
 
         w.seek(writer_pos + mod_offset);
-        for m in &self.mods { m.write(w); }
+        for m in &self.mods {
+            m.write(w);
+        }
     }
 
     pub fn write_modes(&self, w: &mut Writer, mod_offset: usize) {
-        w.seek(w.pos() +  mod_offset);
-        for m in &self.mods { m.write(w); }
+        w.seek(w.pos() + mod_offset);
+        for m in &self.mods {
+            m.write(w);
+        }
     }
 
     pub fn from_reader3(
@@ -266,15 +276,14 @@ impl SynthParams {
         let mixer_reverb = reader.read();
 
         let reader_pos = reader.pos();
-        let associated_eq =
-            if version.at_least(4, 1) {
-                reader.set_pos(reader_pos + mod_offset - 1);
-                reader.read()
-            } else if version.at_least(4, 0) {
-                eq
-            } else {
-                0xFF
-            };
+        let associated_eq = if version.at_least(4, 1) {
+            reader.set_pos(reader_pos + mod_offset - 1);
+            reader.read()
+        } else if version.at_least(4, 0) {
+            eq
+        } else {
+            0xFF
+        };
 
         reader.set_pos(reader_pos + mod_offset);
 

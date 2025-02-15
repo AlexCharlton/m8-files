@@ -3,8 +3,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use crate::{reader::*, writer::Writer};
 
 #[repr(u8)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum EqType {
     #[default]
     LowCut = 0,
@@ -12,62 +11,61 @@ pub enum EqType {
     Bell = 2,
     BandPass = 3,
     HiShelf = 4,
-    HiCut = 5
+    HiCut = 5,
 }
 
-const EQ_TYPE_STR : [&'static str; 6] =
-    [
-        "LOWCUT",
-        "LOWSHELF",
-        "BELL",
-        "BANDPASS",
-        "HI.SHELF",
-        "HI.CUT"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const EQ_TYPE_STR : [&'static str; 6] = [
+    "LOWCUT",
+    "LOWSHELF",
+    "BELL",
+    "BANDPASS",
+    "HI.SHELF",
+    "HI.CUT"
+];
 
 #[repr(u8)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum EqMode {
     #[default]
     Stereo = 0,
     Mid = 1,
     Side = 2,
     Left = 3,
-    Right = 4
+    Right = 4,
 }
 
-const EQ_MODE_STR : [&'static str; 5] =
-    [
-        "STEREO",
-        "MID",
-        "SIDE",
-        "LEFT",
-        "RIGHT"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const EQ_MODE_STR : [&'static str; 5] = [
+    "STEREO",
+    "MID",
+    "SIDE",
+    "LEFT",
+    "RIGHT"
+];
 
 #[derive(PartialEq, Eq, Clone, Debug, Copy, Default)]
 pub struct EqModeType(pub u8);
 
 impl EqModeType {
-    pub fn new(ty: EqType, mode : EqMode) -> EqModeType {
+    pub fn new(ty: EqType, mode: EqMode) -> EqModeType {
         EqModeType(ty as u8 | ((mode as u8) << 5))
     }
 
     pub fn eq_mode_hex(&self) -> u8 {
-        (self.0 >> 5)& 0x7
+        (self.0 >> 5) & 0x7
     }
 
     pub fn eq_type(&self) -> EqType {
-        EqType::try_from(self.eq_type_hex())
-            .unwrap_or(EqType::Bell)
+        EqType::try_from(self.eq_type_hex()).unwrap_or(EqType::Bell)
     }
 
-    pub fn eq_type_hex(&self) -> u8 { self.0 & 0x7 }
+    pub fn eq_type_hex(&self) -> u8 {
+        self.0 & 0x7
+    }
 
     pub fn eq_mode(&self) -> EqMode {
-        EqMode::try_from(self.eq_mode_hex())
-            .unwrap_or(EqMode::Stereo)
+        EqMode::try_from(self.eq_mode_hex()).unwrap_or(EqMode::Stereo)
     }
 
     pub fn mode_str(&self) -> &'static str {
@@ -83,19 +81,19 @@ impl EqModeType {
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct EqBand {
-    pub mode      : EqModeType,
+    pub mode: EqModeType,
 
-    pub freq_fin  : u8,
-    pub freq      : u8,
+    pub freq_fin: u8,
+    pub freq: u8,
 
-    pub level_fin : u8,
-    pub level     : u8,
+    pub level_fin: u8,
+    pub level: u8,
 
-    pub q         : u8
+    pub q: u8,
 }
 
 impl EqBand {
-    const V4_SIZE : usize = 6;
+    const V4_SIZE: usize = 6;
 
     pub fn default_low() -> EqBand {
         let freq = 100 as usize;
@@ -107,7 +105,7 @@ impl EqBand {
             level_fin: 0,
             level: 0,
 
-            q: 50
+            q: 50,
         }
     }
 
@@ -121,7 +119,7 @@ impl EqBand {
             level_fin: 0,
             level: 0,
 
-            q: 50
+            q: 50,
         }
     }
 
@@ -135,7 +133,7 @@ impl EqBand {
             level_fin: 0,
             level: 0,
 
-            q: 50
+            q: 50,
         }
     }
 
@@ -169,24 +167,31 @@ impl EqBand {
         let level = reader.read();
         let q = reader.read();
 
-        Self { level, level_fin, freq, freq_fin, mode, q }
+        Self {
+            level,
+            level_fin,
+            freq,
+            freq_fin,
+            mode,
+            q,
+        }
     }
 }
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct Equ {
-    pub low : EqBand,
-    pub mid : EqBand,
-    pub high : EqBand
+    pub low: EqBand,
+    pub mid: EqBand,
+    pub high: EqBand,
 }
 
 impl Equ {
-    pub const V4_SIZE : usize = 3 * EqBand::V4_SIZE;
+    pub const V4_SIZE: usize = 3 * EqBand::V4_SIZE;
 
     pub fn is_empty(&self) -> bool {
-        self.low == EqBand::default_low() &&
-        self.mid == EqBand::default_mid() &&
-        self.high == EqBand::default_high()
+        self.low == EqBand::default_low()
+            && self.mid == EqBand::default_mid()
+            && self.high == EqBand::default_high()
     }
 
     pub fn clear(&mut self) {

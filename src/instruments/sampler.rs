@@ -1,6 +1,6 @@
+use crate::instruments::common::*;
 use crate::reader::*;
 use crate::version::*;
-use crate::instruments::common::*;
 use crate::writer::Writer;
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -10,19 +10,18 @@ use super::CommandPack;
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(IntoPrimitive, TryFromPrimitive)]
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Copy, Clone, Default, Debug)]
 pub enum SamplePlayMode {
-  #[default]
-  FWD,
-  REV,
-  FWDLOOP,
-  REVLOOP,
-  FWD_PP,
-  REV_PP,
-  OSC,
-  OSC_REV,
-  OSC_PP
+    #[default]
+    FWD,
+    REV,
+    FWDLOOP,
+    REVLOOP,
+    FWD_PP,
+    REV_PP,
+    OSC,
+    OSC_REV,
+    OSC_PP,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -42,8 +41,8 @@ pub struct Sampler {
     pub degrade: u8,
 }
 
-const SAMPLER_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] =
-  [
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const SAMPLER_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] = [
     "VOL",
     "PIT",
     "FIN",
@@ -66,32 +65,32 @@ const SAMPLER_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_
 
     // EXTRA command
     "SLI"
-  ];
+];
 
-const DESTINATIONS : [&'static str; 14] =
-    [
-        dests::OFF,
-        dests::VOLUME,
-        dests::PITCH,
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 14] = [
+    dests::OFF,
+    dests::VOLUME,
+    dests::PITCH,
 
-        "LOOP ST",
-        "LENGTH",
-        dests::DEGRADE,
-        dests::CUTOFF,
-        dests::RES,
-        dests::AMP,
-        dests::PAN,
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+    "LOOP ST",
+    "LENGTH",
+    dests::DEGRADE,
+    dests::CUTOFF,
+    dests::RES,
+    dests::AMP,
+    dests::PAN,
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
 impl Sampler {
-    pub const MOD_OFFSET : usize = 29;
+    pub const MOD_OFFSET: usize = 29;
 
-    pub fn command_name(&self, _ver: Version) -> &'static[&'static str] {
-        &SAMPLER_FX_COMMANDS 
+    pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
+        &SAMPLER_FX_COMMANDS
     }
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
@@ -120,7 +119,13 @@ impl Sampler {
         w.write_string(&self.sample_path, 128);
     }
 
-    pub fn from_reader(ver: Version, reader: &mut Reader, start_pos: usize, number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(
+        ver: Version,
+        reader: &mut Reader,
+        start_pos: usize,
+        number: u8,
+        version: Version,
+    ) -> M8Result<Self> {
         let name = reader.read_string(12);
 
         let transp_eq = TranspEq::from_version(ver, reader.read());
@@ -136,12 +141,19 @@ impl Sampler {
         let length = reader.read();
         let degrade = reader.read();
 
-        let synth_params =
-            if version.at_least(3, 0) {
-                SynthParams::from_reader3(ver, reader, volume, pitch, fine_tune, transp_eq.eq, Sampler::MOD_OFFSET)?
-            } else {
-                SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
-            };
+        let synth_params = if version.at_least(3, 0) {
+            SynthParams::from_reader3(
+                ver,
+                reader,
+                volume,
+                pitch,
+                fine_tune,
+                transp_eq.eq,
+                Sampler::MOD_OFFSET,
+            )?
+        } else {
+            SynthParams::from_reader2(reader, volume, pitch, fine_tune)?
+        };
 
         reader.set_pos(start_pos + 0x57);
         let sample_path = reader.read_string(128);

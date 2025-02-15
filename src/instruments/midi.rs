@@ -1,6 +1,6 @@
+use crate::instruments::common::*;
 use crate::reader::*;
 use crate::version::*;
-use crate::instruments::common::*;
 use crate::writer::Writer;
 
 use arr_macro::arr;
@@ -32,8 +32,8 @@ impl ControlChange {
     }
 }
 
-const MIDI_OUT_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT - 2] =
-  [
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const MIDI_OUT_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT - 2] = [
     "VOL",
     "PIT",
     "MPG",
@@ -50,34 +50,34 @@ const MIDI_OUT_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMA
     "CCH",
     "CCI",
     "CCJ",
-  ];
+];
 
-const DESTINATIONS : [&'static str; 15] =
-    [
-        dests::OFF,
-        params::CCA,
-        params::CCB,
-        params::CCC,
-        params::CCD,
-        "CCE",
-        "CCF",
-        "CCG",
-        "CCH",
-        "CCI",
-        "CCJ",
-        dests::MOD_AMT,
-        dests::MOD_RATE,
-        dests::MOD_BOTH,
-        dests::MOD_BINV,
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const DESTINATIONS : [&'static str; 15] = [
+    dests::OFF,
+    params::CCA,
+    params::CCB,
+    params::CCC,
+    params::CCD,
+    "CCE",
+    "CCF",
+    "CCG",
+    "CCH",
+    "CCI",
+    "CCJ",
+    dests::MOD_AMT,
+    dests::MOD_RATE,
+    dests::MOD_BOTH,
+    dests::MOD_BINV,
+];
 
-const PORTS : [&'static str; 4] =
-    [
-        "MIDI + USB",
-        "MIDI",
-        "USB",
-        "INTERNAL"
-    ];
+#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+const PORTS : [&'static str; 4] = [
+    "MIDI + USB",
+    "MIDI",
+    "USB",
+    "INTERNAL"
+];
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct MIDIOut {
@@ -96,10 +96,10 @@ pub struct MIDIOut {
 }
 
 impl MIDIOut {
-    const MOD_OFFSET : usize = 21;
+    const MOD_OFFSET: usize = 21;
 
-    pub fn command_name(&self, _ver: Version) -> &'static[&'static str] {
-        &MIDI_OUT_COMMAND_NAMES 
+    pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
+        &MIDI_OUT_COMMAND_NAMES
     }
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
@@ -128,7 +128,12 @@ impl MIDIOut {
         self.mods.write_modes(w, MIDIOut::MOD_OFFSET)
     }
 
-    pub fn from_reader(_ver: Version, reader: &mut Reader, number: u8, version: Version) -> M8Result<Self> {
+    pub fn from_reader(
+        _ver: Version,
+        reader: &mut Reader,
+        number: u8,
+        version: Version,
+    ) -> M8Result<Self> {
         let name = reader.read_string(12);
         let transpose = reader.read_bool();
         let table_tick = reader.read();
@@ -139,12 +144,11 @@ impl MIDIOut {
         let program_change = reader.read();
         reader.read_bytes(3); // discard
         let custom_cc = arr![ControlChange::from_reader(reader)?; 10];
-        let mods =
-            if version.at_least(3, 0) {
-                SynthParams::mod_only3(reader, MIDIOut::MOD_OFFSET)?
-            } else {
-                SynthParams::mod_only2(reader)?
-            };
+        let mods = if version.at_least(3, 0) {
+            SynthParams::mod_only3(reader, MIDIOut::MOD_OFFSET)?
+        } else {
+            SynthParams::mod_only2(reader)?
+        };
 
         Ok(MIDIOut {
             number,

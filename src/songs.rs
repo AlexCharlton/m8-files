@@ -18,20 +18,20 @@ pub struct Offsets {
     pub groove: usize,
     pub song: usize,
     pub phrases: usize,
-    pub chains : usize,
-    pub table : usize,
-    pub instruments : usize,
-    pub effect_settings : usize,
+    pub chains: usize,
+    pub table: usize,
+    pub instruments: usize,
+    pub effect_settings: usize,
     pub midi_mapping: usize,
     pub scale: usize,
     pub eq: usize,
 
     /// Number of eq for the song (different between 4.0 & 4.1)
-    pub instrument_eq_count : usize,
+    pub instrument_eq_count: usize,
 
     /// For instrument size, where is the EQ information written
     /// (if any)
-    pub instrument_file_eq_offset : Option<usize>
+    pub instrument_file_eq_offset: Option<usize>,
 }
 
 impl Offsets {
@@ -41,7 +41,7 @@ impl Offsets {
     }
 }
 
-pub const V4_OFFSETS : Offsets = Offsets {
+pub const V4_OFFSETS: Offsets = Offsets {
     groove: 0xEE,
     song: 0x2EE,
     phrases: 0xAEE,
@@ -53,10 +53,10 @@ pub const V4_OFFSETS : Offsets = Offsets {
     scale: 0x1AA7E,
     eq: 0x1AD5A + 4,
     instrument_eq_count: 32,
-    instrument_file_eq_offset : None
+    instrument_file_eq_offset: None,
 };
 
-pub const V4_1_OFFSETS : Offsets = Offsets {
+pub const V4_1_OFFSETS: Offsets = Offsets {
     groove: 0xEE,
     song: 0x2EE,
     phrases: 0xAEE,
@@ -68,9 +68,8 @@ pub const V4_1_OFFSETS : Offsets = Offsets {
     scale: 0x1AA7E,
     eq: 0x1AD5A + 4,
     instrument_eq_count: 0x80,
-    instrument_file_eq_offset: Some(0x165)
+    instrument_file_eq_offset: Some(0x165),
 };
-
 
 ////////////////////////////////////////////////////////////////////////////////////
 /// MARK: Song
@@ -97,7 +96,7 @@ pub struct Song {
     pub effects_settings: EffectsSettings,
     pub midi_settings: MidiSettings,
     pub midi_mappings: Vec<MidiMapping>,
-    pub eqs : Vec<Equ>
+    pub eqs: Vec<Equ>,
 }
 
 impl fmt::Debug for Song {
@@ -120,7 +119,7 @@ impl fmt::Debug for Song {
             .field("tables", &self.table_view(0))
             .field("grooves", &self.grooves[0])
             .field("scales", &self.scales[0])
-            .field("eqs", self.eqs.get(0).unwrap_or(&Equ::default() ) )
+            .field("eqs", self.eqs.get(0).unwrap_or(&Equ::default()))
             .field("mixer_settings", &self.mixer_settings)
             .field("effects_settings", &self.effects_settings)
             .field("midi_settings", &self.midi_settings)
@@ -143,7 +142,7 @@ impl Song {
     pub fn phrase_view(&self, ix: usize) -> PhraseView {
         PhraseView {
             phrase: &self.phrases[ix],
-            instruments: &self.instruments
+            instruments: &self.instruments,
         }
     }
 
@@ -162,12 +161,11 @@ impl Song {
     pub fn table_view(&self, ix: usize) -> TableView {
         TableView {
             table: &self.tables[ix],
-            instrument:
-                if ix < Song::N_INSTRUMENTS {
-                    self.instruments[ix].instr_command_text(self.version)
-                } else {
-                    CommandPack::default()
-                }
+            instrument: if ix < Song::N_INSTRUMENTS {
+                self.instruments[ix].instr_command_text(self.version)
+            } else {
+                CommandPack::default()
+            },
         }
     }
 
@@ -202,14 +200,16 @@ impl Song {
 
     pub fn write(&self, w: &mut Writer) -> Result<(), String> {
         if !self.version.at_least(4, 0) {
-            Err(String::from("Only version 4.0 or above song can be rewritten"))
+            Err(String::from(
+                "Only version 4.0 or above song can be rewritten",
+            ))
         } else {
             self.write_patterns(V4_OFFSETS, w);
             Ok(())
         }
     }
 
-    fn write_patterns(&self, ofs : Offsets, w : &mut Writer) {
+    fn write_patterns(&self, ofs: Offsets, w: &mut Writer) {
         w.seek(ofs.song);
         w.write_bytes(&self.song.steps);
 
@@ -236,7 +236,9 @@ impl Song {
         }
 
         w.seek(ofs.eq);
-        for eq in &self.eqs { eq.write(w); }
+        for eq in &self.eqs {
+            eq.write(w);
+        }
     }
 
     fn from_reader(reader: &mut Reader, version: Version) -> M8Result<Self> {
@@ -304,7 +306,7 @@ impl Song {
                 .map(|_i| Equ::from_reader(reader))
                 .collect::<Vec<Equ>>()
         } else {
-            vec!()
+            vec![]
         };
 
         Ok(Self {
@@ -326,7 +328,7 @@ impl Song {
             scales,
             effects_settings,
             midi_mappings,
-            eqs
+            eqs,
         })
     }
 }
@@ -340,8 +342,8 @@ pub struct SongSteps {
 }
 
 impl SongSteps {
-    pub const TRACK_COUNT : usize = 8;
-    pub const ROW_COUNT : usize = 0x100;
+    pub const TRACK_COUNT: usize = 8;
+    pub const ROW_COUNT: usize = 0x100;
 
     pub fn print_screen(&self) -> String {
         self.print_screen_from(0)
@@ -393,7 +395,7 @@ pub struct Chain {
 }
 
 impl Chain {
-    pub const V4_SIZE : usize = ChainStep::V4_SIZE * 16;
+    pub const V4_SIZE: usize = ChainStep::V4_SIZE * 16;
 
     pub fn is_empty(&self) -> bool {
         self.steps.iter().all(|s| s.is_empty())
@@ -402,7 +404,7 @@ impl Chain {
     pub fn clear(&mut self) {
         let dflt = ChainStep::default();
 
-        for s in &mut self.steps{
+        for s in &mut self.steps {
             *s = dflt;
         }
     }
@@ -416,7 +418,7 @@ impl Chain {
     pub fn map(&self, mapping: &PhraseMapping) -> Self {
         let mut nc = self.clone();
 
-        for i in 0 .. 16 {
+        for i in 0..16 {
             nc.steps[i] = nc.steps[i].map(mapping);
         }
 
@@ -430,7 +432,9 @@ impl Chain {
     }
 
     pub fn from_reader(reader: &mut Reader) -> M8Result<Self> {
-        Ok(Self { steps: arr![ChainStep::from_reader(reader)?; 16] })
+        Ok(Self {
+            steps: arr![ChainStep::from_reader(reader)?; 16],
+        })
     }
 }
 
@@ -453,12 +457,15 @@ pub struct ChainStep {
 
 impl Default for ChainStep {
     fn default() -> Self {
-        Self { phrase: 255, transpose: 0, }
+        Self {
+            phrase: 255,
+            transpose: 0,
+        }
     }
 }
 
 impl ChainStep {
-    pub const V4_SIZE : usize = 2;
+    pub const V4_SIZE: usize = 2;
 
     pub fn is_empty(self) -> bool {
         self.phrase == 0xFF
@@ -474,11 +481,16 @@ impl ChainStep {
 
     pub fn map(&self, mapping: &PhraseMapping) -> Self {
         let phrase_ix = self.phrase as usize;
-        let phrase =
-            if phrase_ix >= Song::N_PHRASES { self.phrase }
-            else { mapping.mapping[phrase_ix] };
+        let phrase = if phrase_ix >= Song::N_PHRASES {
+            self.phrase
+        } else {
+            mapping.mapping[phrase_ix]
+        };
 
-        Self { phrase, transpose: self.transpose }
+        Self {
+            phrase,
+            transpose: self.transpose,
+        }
     }
 
     pub fn write(&self, w: &mut Writer) {
@@ -494,7 +506,6 @@ impl ChainStep {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////
 // MARK: Phrase
 ////////////////////////////////////////////////////////////////////////////////////
@@ -505,7 +516,7 @@ pub struct Phrase {
 }
 
 impl Phrase {
-    pub const V4_SIZE : usize = 16 * Step::V4_SIZE;
+    pub const V4_SIZE: usize = 16 * Step::V4_SIZE;
 
     pub fn is_empty(&self) -> bool {
         self.steps.iter().all(|s| s.is_empty())
@@ -522,8 +533,7 @@ impl Phrase {
         let fx_commands = FX::fx_command_names(self.version);
         let mut acc = String::from("  N   V  I  FX1   FX2   FX3  \n");
 
-
-        for i in 0 .. 16 {
+        for i in 0..16 {
             let step = &self.steps[i];
             let instrument = step.instrument as usize;
 
@@ -540,13 +550,13 @@ impl Phrase {
 
     pub fn map_instruments(&self, instr_map: &InstrumentMapping) -> Self {
         let mut steps = self.steps.clone();
-        for i in 0 .. steps.len() {
+        for i in 0..steps.len() {
             steps[i] = steps[i].map_instr(&instr_map);
         }
 
         Self {
             steps,
-            version: self.version
+            version: self.version,
         }
     }
 
@@ -556,7 +566,7 @@ impl Phrase {
         }
     }
 
-    pub fn from_reader(reader: &mut Reader,  version: Version) -> M8Result<Self> {
+    pub fn from_reader(reader: &mut Reader, version: Version) -> M8Result<Self> {
         Ok(Self {
             steps: arr![Step::from_reader(reader)?; 16],
             version,
@@ -566,12 +576,16 @@ impl Phrase {
 
 pub struct PhraseView<'a> {
     phrase: &'a Phrase,
-    instruments: &'a [Instrument]
+    instruments: &'a [Instrument],
 }
 
 impl<'a> fmt::Display for PhraseView<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "PHRASE \n\n{}", self.phrase.print_screen(self.instruments))
+        write!(
+            f,
+            "PHRASE \n\n{}",
+            self.phrase.print_screen(self.instruments)
+        )
     }
 }
 
@@ -591,11 +605,10 @@ pub struct Step {
     pub fx3: FX,
 }
 
-
 impl Step {
-    pub const V4_SIZE : usize = 3 + 3 * FX::V4_SIZE;
+    pub const V4_SIZE: usize = 3 + 3 * FX::V4_SIZE;
 
-    pub fn print(&self, row: u8, fx_cmds: FxCommands, cmd_pack: CommandPack ) -> String {
+    pub fn print(&self, row: u8, fx_cmds: FxCommands, cmd_pack: CommandPack) -> String {
         let velocity = if self.velocity == 255 {
             format!("--")
         } else {
@@ -629,18 +642,20 @@ impl Step {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.note.is_empty() &&
-            self.velocity == 0xFF &&
-            self.instrument == 0xFF &&
-            self.fx1.is_empty() &&
-            self.fx2.is_empty() &&
-            self.fx3.is_empty()
+        self.note.is_empty()
+            && self.velocity == 0xFF
+            && self.instrument == 0xFF
+            && self.fx1.is_empty()
+            && self.fx2.is_empty()
+            && self.fx3.is_empty()
     }
 
     pub fn map_instr(&self, mapping: &InstrumentMapping) -> Step {
-        let instrument =
-            if (self.instrument as usize) >= Song::N_INSTRUMENTS { self.instrument }
-            else { mapping.mapping[self.instrument as usize] };
+        let instrument = if (self.instrument as usize) >= Song::N_INSTRUMENTS {
+            self.instrument
+        } else {
+            mapping.mapping[self.instrument as usize]
+        };
 
         Self {
             note: self.note,
@@ -648,8 +663,7 @@ impl Step {
             instrument,
             fx1: self.fx1,
             fx2: self.fx2,
-            fx3: self.fx3
-
+            fx3: self.fx3,
         }
     }
 
@@ -729,7 +743,7 @@ pub struct Table {
     version: Version,
 }
 impl Table {
-    pub const V4_SIZE : usize = 16 * TableStep::V4_SIZE;
+    pub const V4_SIZE: usize = 16 * TableStep::V4_SIZE;
 
     pub fn is_empty(&self) -> bool {
         self.steps.iter().all(|s| s.is_empty())
@@ -738,7 +752,7 @@ impl Table {
     pub fn clear(&mut self) {
         let dflt = TableStep::default();
 
-        for s in &mut self.steps{
+        for s in &mut self.steps {
             *s = dflt.clone();
         }
     }
@@ -747,7 +761,7 @@ impl Table {
         let fx_cmd = FX::fx_command_names(self.version);
         let mut acc = String::from("  N  V  FX1   FX2   FX3  \n");
 
-        for i in 0 .. 16 {
+        for i in 0..16 {
             let step = &self.steps[i];
 
             acc += &step.print(i as u8, fx_cmd, cmd);
@@ -764,13 +778,16 @@ impl Table {
     }
 
     pub fn from_reader(reader: &mut Reader, version: Version) -> M8Result<Self> {
-        Ok(Self { steps: arr![TableStep::from_reader(reader)?; 16], version })
+        Ok(Self {
+            steps: arr![TableStep::from_reader(reader)?; 16],
+            version,
+        })
     }
 }
 
 pub struct TableView<'a> {
     table: &'a Table,
-    instrument: CommandPack
+    instrument: CommandPack,
 }
 
 impl<'a> fmt::Display for TableView<'a> {
@@ -801,20 +818,20 @@ impl Default for TableStep {
             velocity: 0xFF,
             fx1: Default::default(),
             fx2: Default::default(),
-            fx3: Default::default()
+            fx3: Default::default(),
         }
     }
 }
 
 impl TableStep {
-    pub const V4_SIZE : usize = 2 + 3 * FX::V4_SIZE;
+    pub const V4_SIZE: usize = 2 + 3 * FX::V4_SIZE;
 
     pub fn is_empty(&self) -> bool {
-        self.transpose == 0 &&
-            self.velocity == 0xFF &&
-            self.fx1.is_empty() &&
-            self.fx2.is_empty() &&
-            self.fx3.is_empty()
+        self.transpose == 0
+            && self.velocity == 0xFF
+            && self.fx1.is_empty()
+            && self.fx2.is_empty()
+            && self.fx3.is_empty()
     }
 
     pub fn print(&self, row: u8, fx_cmd: FxCommands, cmds: CommandPack) -> String {

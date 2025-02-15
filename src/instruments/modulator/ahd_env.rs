@@ -2,7 +2,6 @@ use crate::{writer::Writer, Version};
 
 use super::{M8Result, Mod, Reader};
 
-
 #[derive(PartialEq, Debug, Clone, Default)]
 pub struct AHDEnv {
     pub dest: u8,
@@ -12,16 +11,15 @@ pub struct AHDEnv {
     pub decay: u8,
 }
 
-const AHDENV_COMMAND_NAMES : [[&'static str; 5]; 4] =
-  [
+const AHDENV_COMMAND_NAMES: [[&'static str; 5]; 4] = [
     ["EA1", "AT1", "HO1", "DE1", "ET1"],
     ["EA2", "AT2", "HO2", "DE2", "ET2"],
     ["EA3", "AT3", "HO3", "DE3", "ET3"],
-    ["EA4", "AT4", "HO4", "DE4", "ET4"]
-  ];
+    ["EA4", "AT4", "HO4", "DE4", "ET4"],
+];
 
 impl AHDEnv {
-    pub fn command_names(_ver: Version, mod_id: usize) -> &'static[&'static str] {
+    pub fn command_names(_ver: Version, mod_id: usize) -> &'static [&'static str] {
         &AHDENV_COMMAND_NAMES[mod_id]
     }
 
