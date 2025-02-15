@@ -15,10 +15,16 @@ fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
     let mut f = File::open(&args[1])?;
-    let song = Song::read(&mut f)?;
+    let instr = Instrument::read(&mut f)?;
 
-    dbg!(&song);
-    dbg!(&song.eqs);
+    dbg!(&instr.instrument);
+
+    match &instr.eq {
+        None => {}
+        Some(eq) => {
+            dbg!(eq);
+        }
+    };
 
     Ok(())
 }

@@ -12,25 +12,26 @@ pub struct Scale {
     pub name: String,
     pub notes: [NoteOffset; 12], // Offsets for notes C-B
 }
+
 impl Scale {
     const SIZE: usize = 32;
 
-    pub fn read(reader: &mut impl std::io::Read) -> Result<Self> {
+    pub fn read(reader: &mut impl std::io::Read) -> M8Result<Self> {
         let mut buf: Vec<u8> = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let len = buf.len();
-        let reader = Reader::new(buf);
+        let mut reader = Reader::new(buf);
 
         if len < Self::SIZE + Version::SIZE {
             return Err(ParseError(
                 "File is not long enough to be a M8 Scale".to_string(),
             ));
         }
-        Version::from_reader(&reader)?;
-        Self::from_reader(&reader, 0)
+        Version::from_reader(&mut reader)?;
+        Self::from_reader(&mut reader, 0)
     }
 
-    pub(crate) fn from_reader(reader: &Reader, number: u8) -> Result<Self> {
+    pub(crate) fn from_reader(reader: &mut Reader, number: u8) -> M8Result<Self> {
         let map = LittleEndian::read_u16(reader.read_bytes(2));
         let mut notes = arr![NoteOffset::default(); 12];
 
