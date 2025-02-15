@@ -16,5 +16,6 @@ byteorder = "1.4.3"
 num_enum = "0.7.3"
 
 [features]
-# Used to squash compilation warnings stemming from array-concat
-"const_panic"=[]
+# Used to fix warnings stemming from array-concat
+# This can be removed when this bug is fixed: https://github.com/inspier/array-concat/pull/4
+const_panic = []
