@@ -32,7 +32,7 @@ impl ControlChange {
     }
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const MIDI_OUT_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT - 2] = [
     "VOL",
     "PIT",
@@ -52,7 +52,7 @@ const MIDI_OUT_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMA
     "CCJ",
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 15] = [
     dests::OFF,
     params::CCA,
@@ -71,8 +71,8 @@ const DESTINATIONS : [&'static str; 15] = [
     dests::MOD_BINV,
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
-const PORTS : [&'static str; 4] = [
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
+pub(crate) const PORTS : [&'static str; 4] = [
     "MIDI + USB",
     "MIDI",
     "USB",
@@ -97,6 +97,10 @@ pub struct MIDIOut {
 
 impl MIDIOut {
     const MOD_OFFSET: usize = 21;
+
+    pub fn port_names(_ver: Version) -> &'static [&'static str] {
+        &PORTS
+    }
 
     pub fn command_name(&self, _ver: Version) -> &'static [&'static str] {
         &MIDI_OUT_COMMAND_NAMES

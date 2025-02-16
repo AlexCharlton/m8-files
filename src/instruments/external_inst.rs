@@ -27,7 +27,7 @@ pub struct ExternalInst {
     pub ccd: ControlChange,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const EXTERNAL_INST_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] = [
     "VOL",
     "PIT",
@@ -54,7 +54,7 @@ const EXTERNAL_INST_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMA
     "CHD"
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 14] = [
     dests::OFF,
     dests::VOLUME,
@@ -72,15 +72,6 @@ const DESTINATIONS : [&'static str; 14] = [
     dests::MOD_BINV,
 ];
 
-/// Ports name of the external instrument
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
-const PORT : [&'static str; 4] = [
-    "NONE",
-    "MIDI+USB",
-    "MIDI",
-    "USB"
-];
-
 impl ExternalInst {
     const MOD_OFFSET: usize = 22;
 
@@ -92,9 +83,14 @@ impl ExternalInst {
         &DESTINATIONS
     }
 
+    /// List of all the applyable filter types for the instrument
+    pub fn filter_types(&self, _ver: Version) -> &'static [&'static str] {
+        &super::common::COMMON_FILTER_TYPES
+    }
+
     /// Return human readable name of the port.
     pub fn human_readable_port(&self) -> &'static str {
-        PORT[self.port as usize]
+        crate::instruments::midi::PORTS[self.port as usize]
     }
 
     pub fn write(&self, ver: Version, w: &mut Writer) {

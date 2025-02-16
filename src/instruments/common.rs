@@ -59,7 +59,7 @@ const LIMIT_TYPE : [&str; 8] = [
 ];
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct LimitType(u8);
+pub struct LimitType(pub u8);
 
 impl fmt::Debug for LimitType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -115,7 +115,7 @@ pub struct SynthParams {
 }
 
 #[rustfmt::skip] // Keep constats with important order vertical for maintenance
-pub const COMMON_FILTER_TYPES : [&'static str; 8] = [
+pub(crate) const COMMON_FILTER_TYPES : [&'static str; 8] = [
     "OFF",
     "LOWPASS",
     "HIGHPAS",

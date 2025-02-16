@@ -14,7 +14,7 @@ pub enum EqType {
     HiCut = 5,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const EQ_TYPE_STR : [&'static str; 6] = [
     "LOWCUT",
     "LOWSHELF",
@@ -35,7 +35,7 @@ pub enum EqMode {
     Right = 4,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const EQ_MODE_STR : [&'static str; 5] = [
     "STEREO",
     "MID",
