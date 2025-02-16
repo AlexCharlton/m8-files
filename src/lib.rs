@@ -77,6 +77,7 @@ mod theme;
 mod version;
 pub mod writer;
 
+pub use eq::*;
 pub use fx::*;
 pub use instruments::*;
 pub use scale::*;

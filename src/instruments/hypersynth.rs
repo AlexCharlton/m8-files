@@ -27,7 +27,7 @@ pub struct HyperSynth {
     pub chords: [[u8; 6]; 0x10],
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const HYPERSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 2] = [
     "VOL",
     "PIT",
@@ -54,7 +54,7 @@ const HYPERSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COM
     "SNC"
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 15] = [
     dests::OFF,
     dests::VOLUME,
@@ -83,6 +83,11 @@ impl HyperSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    /// List of all the applyable filter types for the instrument
+    pub fn filter_types(&self, _ver: Version) -> &'static [&'static str] {
+        &super::common::COMMON_FILTER_TYPES
     }
 
     pub fn human_readable_filter(&self) -> &'static str {

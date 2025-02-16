@@ -41,7 +41,7 @@ pub struct Sampler {
     pub degrade: u8,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const SAMPLER_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] = [
     "VOL",
     "PIT",
@@ -67,7 +67,7 @@ const SAMPLER_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_
     "SLI"
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 14] = [
     dests::OFF,
     dests::VOLUME,
@@ -95,6 +95,11 @@ impl Sampler {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    /// List of all the applyable filter types for the instrument
+    pub fn filter_types(&self, _ver: Version) -> &'static [&'static str] {
+        &COMMON_FILTER_TYPES
     }
 
     pub fn write(&self, ver: Version, w: &mut Writer) {

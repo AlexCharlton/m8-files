@@ -11,7 +11,7 @@ use super::dests;
 use super::CommandPack;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct FmAlgo(u8);
+pub struct FmAlgo(pub u8);
 
 const FM_ALGO_STRINGS: [&str; 0x0C] = [
     "A>B>C>D",
@@ -136,7 +136,7 @@ pub enum FMWave {
     W45,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const FM_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT + 1] = [
     "VOL",
     "PIT",
@@ -161,7 +161,7 @@ const FM_FX_COMMANDS : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT
     "FMP",
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 15] = [
     dests::OFF,
     dests::VOLUME,
@@ -218,6 +218,11 @@ impl FMSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    /// List of all the applyable filter types for the instrument
+    pub fn filter_types(&self, _ver: Version) -> &'static [&'static str] {
+        &COMMON_FILTER_TYPES
     }
 
     pub fn human_readable_filter(&self) -> &'static str {

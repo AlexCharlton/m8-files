@@ -12,7 +12,7 @@ Big thanks to [m8-js](https://github.com/whitlockjc/m8-js) who did all the real 
 
 Add to your `Cargo.toml`:
 ```
-m8-files = "0.3"
+m8-files = "0.3.1"
 ```
 Or
 ```
@@ -28,12 +28,17 @@ $ cargo run --example read_song -- examples/songs/DEFAULT.m8s
 ## TODO
 - Add song groove, scale, note_preview
 - Add settings: output/speaker volume
-- Support writes?
 - Throw more parse errors
-- Interpret FXCommand based on Instrument
 - Displays: MixerSettings, EffectsSettings, Instrument, MidiSettings, MidiMapping
 
 ## Changelog
+
+### 0.3.1
+
+ - Fixing visibility of Eq types (was private in 0.3)
+ - FmAlgo content is now publicly visible
+ - Each instrument filter type can now be accessed through a methdo.
+ - Parameters and modulation destination constants is now public.
 
 ### 0.3
 
