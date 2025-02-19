@@ -37,7 +37,7 @@ $ cargo run --example read_song -- examples/songs/DEFAULT.m8s
 
  - Fixing visibility of Eq types (was private in 0.3)
  - FmAlgo content is now publicly visible
- - Each instrument filter type can now be accessed through a methdo.
+ - Each instrument filter type can now be accessed through the filter_types method
  - Parameters and modulation destination constants is now public.
 
 ### 0.3
