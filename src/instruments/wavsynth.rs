@@ -101,7 +101,7 @@ pub struct WavSynth {
     pub scan: u8,
 }
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const WAVSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMAND_COUNT] = [
     "VOL",
     "PIT",
@@ -124,7 +124,7 @@ const WAVSYNTH_COMMAND_NAMES : [&'static str; CommandPack::BASE_INSTRUMENT_COMMA
     "SRV",
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const DESTINATIONS : [&'static str; 15] = [
     dests::OFF,
     dests::VOLUME,
@@ -144,7 +144,7 @@ const DESTINATIONS : [&'static str; 15] = [
     dests::MOD_BINV,
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const WAVSYNTH_FILTER_TYPES : [&'static str; 12] = [
     "OFF",
     "LOWPASS",
@@ -169,6 +169,11 @@ impl WavSynth {
 
     pub fn destination_names(&self, _ver: Version) -> &'static [&'static str] {
         &DESTINATIONS
+    }
+
+    /// List of all the applyable filter types for the instrument
+    pub fn filter_types(&self, _ver: Version) -> &'static [&'static str] {
+        &WAVSYNTH_FILTER_TYPES
     }
 
     pub fn human_readable_filter(&self) -> &'static str {

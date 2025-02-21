@@ -39,8 +39,7 @@ pub enum Instrument {
 }
 
 /// Various constants for common parameters, to avoid nasty typos everywhere
-#[allow(unused)]
-mod params {
+pub mod params {
     pub const NAME: &'static str = "NAME";
     pub const TRANSPOSE: &'static str = "TRANSPOSE";
     pub const TBLTIC: &'static str = "TBL. TIC";
@@ -68,7 +67,7 @@ mod params {
 }
 
 /// Various constants for modulation destinations, to avoid nasty typos everywhere
-mod dests {
+pub mod dests {
     pub const OFF: &'static str = "OFF";
     pub const VOLUME: &'static str = "VOLUME";
     pub const PITCH: &'static str = "PITCH";

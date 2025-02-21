@@ -40,7 +40,7 @@ impl Default for FX {
 // MARK: V2 commands
 //////////////////////////////////////////
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const SEQ_COMMAND_V2 : [&'static str; 23] = [
     "ARP",
     "CHA",
@@ -67,7 +67,7 @@ const SEQ_COMMAND_V2 : [&'static str; 23] = [
     "TSP",
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const FX_MIXER_COMMAND_V2 : [&'static str; 36] = [
     "VMV",
     "XCM",
@@ -114,7 +114,7 @@ const COMMANDS_V2: [&'static str; concat_arrays_size!(SEQ_COMMAND_V2, FX_MIXER_C
 // MARK: V3 commands
 //////////////////////////////////////////
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const SEQ_COMMAND_V3 : [&'static str; 27] = [
     "ARP",
     "CHA",
@@ -145,7 +145,7 @@ const SEQ_COMMAND_V3 : [&'static str; 27] = [
     "OFF",
 ];
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const FX_MIXER_COMMAND_V3 : [&'static str; 36] = [
     "VMV",
     "XCM",
@@ -192,7 +192,7 @@ const COMMANDS_V3: [&'static str; concat_arrays_size!(SEQ_COMMAND_V3, FX_MIXER_C
 // MARK: V4 commands
 //////////////////////////////////////////
 
-#[rustfmt::skip] // Keep constats with important order vertical for maintenance
+#[rustfmt::skip] // Keep constants with important order vertical for maintenance
 const FX_MIXER_COMMAND_V4 : [&'static str; 44] = [
     "VMV",
     "XCM",
